@@ -1,0 +1,56 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
+
+import { AppHeader } from "@/components/navigation/AppHeader";
+import { useAuth } from "@/providers/AuthProvider";
+
+export default function TabsLayout() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/index" />;
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "#2563EB",
+        tabBarInactiveTintColor: "#6B7280",
+        tabBarStyle: {
+          borderTopColor: "#E5E7EB",
+          height: 66,
+          paddingTop: 6,
+          paddingBottom: 8,
+        },
+        header: ({ options }) => (
+          <AppHeader
+            title={
+              typeof options.title === "string"
+                ? options.title
+                : "Science Lifting"
+            }
+          />
+        ),
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: "Progress",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}
