@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function HomeScreen() {
-  const { logout } = useAuth();
+  const logout = useAuthStore((state) => state.logout);
 
   return (
     <View style={styles.container}>

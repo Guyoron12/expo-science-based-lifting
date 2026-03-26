@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 
 import { AppHeader } from "@/components/navigation/AppHeader";
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function TabsLayout() {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (!isAuthenticated) {
-    return <Redirect href="/(auth)/index" />;
+    return <Redirect href="/(auth)" />;
   }
 
   return (

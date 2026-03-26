@@ -1,9 +1,9 @@
 import { Redirect, Slot } from "expo-router";
 
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function AuthLayout() {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (isAuthenticated) {
     return <Redirect href="/(tabs)" />;

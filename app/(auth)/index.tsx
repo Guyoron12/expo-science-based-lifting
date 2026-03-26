@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAuth } from "@/providers/AuthProvider";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const login = useAuthStore((state) => state.login);
 
   return (
     <View style={styles.container}>
