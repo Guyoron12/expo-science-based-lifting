@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { theme } from "@/theme";
+
 type AppHeaderProps = {
   title: string;
 };
@@ -18,13 +20,12 @@ const styles = StyleSheet.create({
     paddingTop: 42,
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#1F2937",
-    backgroundColor: "#111827",
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.background.secondary,
     justifyContent: "center",
   },
   title: {
-    color: "#F9FAFB",
-    fontSize: 20,
-    fontWeight: "700",
+    ...theme.typography.title,
+    color: theme.colors.text.primary,
   },
 });

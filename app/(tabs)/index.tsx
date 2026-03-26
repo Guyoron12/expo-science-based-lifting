@@ -1,17 +1,25 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { ProgressIndicator } from "@/components/ui/ProgressIndicator";
 import { useAuthStore } from "@/stores/auth.store";
+import { theme } from "@/theme";
 
 export default function HomeScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Science Based Lifting</Text>
-      <Text style={styles.body}>Use tabs below to navigate.</Text>
-      <Pressable onPress={logout} style={styles.button}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </Pressable>
+      <Card style={styles.card}>
+        <Text style={styles.title}>Science Based Lifting</Text>
+        <Text style={styles.body}>Focused training data for each session.</Text>
+        <View style={styles.metricRow}>
+          <Text style={styles.metricValue}>152.5 kg</Text>
+          <ProgressIndicator value="2.5 kg" trend="up" />
+        </View>
+      </Card>
+      <Button label="Logout" onPress={logout} variant="secondary" />
     </View>
   );
 }
@@ -20,31 +28,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#F9FAFB",
+    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.background.primary,
+  },
+  card: {
+    gap: theme.spacing.sm,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "700",
-    textAlign: "center",
-    color: "#111827",
+    ...theme.typography.title,
+    color: theme.colors.text.primary,
   },
   body: {
-    marginTop: 10,
-    fontSize: 15,
-    color: "#4B5563",
+    ...theme.typography.body,
+    color: theme.colors.text.secondary,
   },
-  button: {
-    marginTop: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#111827",
+  metricRow: {
+    marginTop: theme.spacing.sm,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+  metricValue: {
+    ...theme.typography.metric,
+    color: theme.colors.text.primary,
   },
 });

@@ -3,6 +3,7 @@ import { Redirect, Tabs } from "expo-router";
 
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { useAuthStore } from "@/stores/auth.store";
+import { theme } from "@/theme";
 
 export default function TabsLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -14,13 +15,18 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#2563EB",
-        tabBarInactiveTintColor: "#6B7280",
+        tabBarActiveTintColor: theme.colors.accent,
+        tabBarInactiveTintColor: theme.colors.text.muted,
         tabBarStyle: {
-          borderTopColor: "#E5E7EB",
+          borderTopColor: theme.colors.border,
+          backgroundColor: theme.colors.background.secondary,
           height: 66,
           paddingTop: 6,
           paddingBottom: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
         },
         header: ({ options }) => (
           <AppHeader
