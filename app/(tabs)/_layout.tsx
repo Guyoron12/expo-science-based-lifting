@@ -43,7 +43,25 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="progress"
+        name="workout/index"
+        options={{
+          title: "Workout",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="barbell-sharp" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="coach/index"
+        options={{
+          title: "Coach",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="school-sharp" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="progress/index"
         options={{
           title: "Progress",
           tabBarIcon: ({ color, size }) => (
