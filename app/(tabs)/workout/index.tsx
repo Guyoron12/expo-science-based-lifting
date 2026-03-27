@@ -2,16 +2,50 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
-import { WorkoutSetRow } from "@/components/ui/WorkoutSetRow";
+import WorkoutSetRow from "@/components/ui/WorkoutSetRow";
 import { theme } from "@/theme";
-
+//TODO: mock split data
+const split = {
+  id: 1,
+  name: "upper lower",
+  frequencyWeekly: 2,
+  routines: [
+    {
+      id: 1,
+      name: "upper A",
+      exercises: [
+        {
+          id: 1,
+          exerciseName: "Bench Press",
+          muscleGroups: [
+            {
+              id: 1,
+              name: "Chest",
+              activation: "primary",
+            },
+            {
+              id: 2,
+              name: "Shoulders",
+              activation: "secondary",
+            },
+            {
+              id: 3,
+              name: "Triceps",
+              activation: "stabilizer",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
 export default function WorkoutScreen() {
   const [reps, setReps] = useState("8");
   const [weight, setWeight] = useState("100");
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Workout</Text>
+      <Text style={styles.title}>split</Text>
       <WorkoutSetRow
         exercise="Back Squat"
         reps={reps}

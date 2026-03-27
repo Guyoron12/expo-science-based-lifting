@@ -11,7 +11,7 @@ type WorkoutSetRowProps = {
   onWeightChange: (value: string) => void;
 };
 
-export function WorkoutSetRow({
+export default function WorkoutSetRow({
   exercise,
   reps,
   weight,
