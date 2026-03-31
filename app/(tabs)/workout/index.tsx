@@ -1,5 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useLayoutEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text } from "react-native";
 
+import { AppHeader } from "@/components/navigation/AppHeader";
+import WeekDateSlider from "@/components/ui/WeekDateSlider";
 import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
 import { useQuery } from "@tanstack/react-query";
@@ -25,45 +29,73 @@ type MuscleGroup = {
   name: string;
   activation: "primary" | "secondary" | "stabilizer";
 };
+
+function startOfLocalDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
 export default function WorkoutScreen() {
+  const navigation = useNavigation();
+  const [selectedDate, setSelectedDate] = useState(() =>
+    startOfLocalDay(new Date()),
+  );
   const {
     data: activeSplit,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<ActiveSplit>({
     queryKey: ["split"],
-    queryFn: fetchActiveSplit,
+    queryFn: fetchActiveSplit as () => Promise<ActiveSplit>,
   });
+  const subtitle = selectedDate.toLocaleDateString();
+  useLayoutEffect(() => {
+    if (activeSplit?.name) {
+      navigation.setOptions({
+        header: () => (
+          <AppHeader title={activeSplit.name} subtitle={subtitle} />
+        ),
+      });
+    } else {
+      navigation.setOptions({ header: undefined });
+    }
+  }, [navigation, activeSplit, subtitle]);
+
+  //TODO: handle loading
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
+  //TODO: handle error
   if (error) {
     return <Text>Error: {error.message}</Text>;
   }
-  const formattedDate = new Date().toLocaleDateString();
+  //TODO: handle no active split
+  if (!activeSplit) {
+    return <Text>No active split</Text>;
+  }
+
   return (
-    <View style={styles.container}>
-      <View>
-        <Text style={styles.title}>{activeSplit.name}</Text>
-        <Text style={styles.date}>{formattedDate}</Text>
-      </View>
-    </View>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
+      <WeekDateSlider
+        selectedDate={selectedDate}
+        onSelectDate={setSelectedDate}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
-    padding: theme.spacing.lg,
-    gap: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
   },
-  title: {
-    ...theme.typography.title,
-    color: theme.colors.text.primary,
-  },
-  date: {
-    ...theme.typography.body,
-    color: theme.colors.text.secondary,
+  content: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
   },
 });
