@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import {
   QueryClient,
   mutationOptions,
@@ -6,6 +5,7 @@ import {
   type MutationKey,
   type QueryKey,
 } from "@tanstack/react-query";
+import Constants from "expo-constants";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -51,7 +51,11 @@ function normalizePath(path: string): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-function buildUrl(baseUrl: string, path: string, queryParams?: QueryParams): string {
+function buildUrl(
+  baseUrl: string,
+  path: string,
+  queryParams?: QueryParams,
+): string {
   const url = `${normalizeBaseUrl(baseUrl)}${normalizePath(path)}`;
   if (!queryParams) {
     return url;
@@ -98,7 +102,10 @@ export class ApiError extends Error {
   url: string;
   data: unknown;
 
-  constructor(message: string, options: { status: number; url: string; data: unknown }) {
+  constructor(
+    message: string,
+    options: { status: number; url: string; data: unknown },
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = options.status;
@@ -119,7 +126,9 @@ function createRequest<TResponse, TBody = unknown>({
 
     const headers = new Headers(defaultHeaders);
     if (config.headers) {
-      new Headers(config.headers).forEach((value, key) => headers.set(key, value));
+      new Headers(config.headers).forEach((value, key) =>
+        headers.set(key, value),
+      );
     }
     if (shouldStringifyBody(config.body) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -140,18 +149,21 @@ function createRequest<TResponse, TBody = unknown>({
     const responseData = await parseResponse(response);
 
     if (!response.ok) {
-      throw new ApiError(`Request failed for ${methodName} (${response.status})`, {
-        status: response.status,
-        url,
-        data: responseData,
-      });
+      throw new ApiError(
+        `Request failed for ${methodName} (${response.status})`,
+        {
+          status: response.status,
+          url,
+          data: responseData,
+        },
+      );
     }
 
     return responseData as TResponse;
   };
 }
 
-export const apiService = {
+export const ApiService = {
   // Example shape requested:
   // apiService.getExercises = createRequest({ method: "GET", methodName: "getExercises" })
   getExercises: createRequest({
@@ -182,7 +194,11 @@ type CreateQueryOptionsParams<TData, TQueryKey extends QueryKey> = {
   enabled?: boolean;
 };
 
-type CreateMutationOptionsParams<TData, TVariables, TMutationKey extends MutationKey> = {
+type CreateMutationOptionsParams<
+  TData,
+  TVariables,
+  TMutationKey extends MutationKey,
+> = {
   mutationKey: TMutationKey;
   mutationFn: (variables: TVariables) => Promise<TData>;
 };

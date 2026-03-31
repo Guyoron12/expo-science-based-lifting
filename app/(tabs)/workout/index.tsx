@@ -1,59 +1,52 @@
-import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Button } from "@/components/ui/Button";
-import WorkoutSetRow from "@/components/ui/WorkoutSetRow";
+import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
-//TODO: mock split data
-const split = {
-  id: 1,
-  name: "upper lower",
-  frequencyWeekly: 2,
-  routines: [
-    {
-      id: 1,
-      name: "upper A",
-      exercises: [
-        {
-          id: 1,
-          exerciseName: "Bench Press",
-          muscleGroups: [
-            {
-              id: 1,
-              name: "Chest",
-              activation: "primary",
-            },
-            {
-              id: 2,
-              name: "Shoulders",
-              activation: "secondary",
-            },
-            {
-              id: 3,
-              name: "Triceps",
-              activation: "stabilizer",
-            },
-          ],
-        },
-      ],
-    },
-  ],
+import { useQuery } from "@tanstack/react-query";
+type ActiveSplit = {
+  id: number;
+  name: string;
+  frequencyWeekly: number;
+  active: boolean;
+  routines: Routine[];
+};
+type Routine = {
+  id: number;
+  name: string;
+  exercises: Exercise[];
+};
+type Exercise = {
+  id: number;
+  exerciseName: string;
+  muscleGroups: MuscleGroup[];
+};
+type MuscleGroup = {
+  id: number;
+  name: string;
+  activation: "primary" | "secondary" | "stabilizer";
 };
 export default function WorkoutScreen() {
-  const [reps, setReps] = useState("8");
-  const [weight, setWeight] = useState("100");
-
+  const {
+    data: activeSplit,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["split"],
+    queryFn: fetchActiveSplit,
+  });
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+  if (error) {
+    return <Text>Error: {error.message}</Text>;
+  }
+  const formattedDate = new Date().toLocaleDateString();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>split</Text>
-      <WorkoutSetRow
-        exercise="Back Squat"
-        reps={reps}
-        weight={weight}
-        onRepsChange={setReps}
-        onWeightChange={setWeight}
-      />
-      <Button label="Log Set" onPress={() => {}} />
+      <View>
+        <Text style={styles.title}>{activeSplit.name}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
+      </View>
     </View>
   );
 }
@@ -68,5 +61,9 @@ const styles = StyleSheet.create({
   title: {
     ...theme.typography.title,
     color: theme.colors.text.primary,
+  },
+  date: {
+    ...theme.typography.body,
+    color: theme.colors.text.secondary,
   },
 });
