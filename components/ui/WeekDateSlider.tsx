@@ -1,29 +1,37 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { theme } from "@/theme";
 
-const WEEKDAY_LABELS = [
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat",
-  "Sun",
-] as const;
+const CARD_GAP = 12;
+const SCROLL_EDGE_PADDING = 16;
+const CLIPPED_CARD_OPACITY = 0.65;
+const VISIBILITY_EPS = 2;
+const SCROLL_THROTTLE_MS = 32;
+
+const COLORS = {
+  cardBg: "#0F1724",
+  cardBgSelected: "#2F9BFF",
+  border: "rgba(255, 255, 255, 0.176)",
+  text: "#E6EEF8",
+  textSelected: "#061428",
+} as const;
+
+// ─── pure helpers ────────────────────────────────────────────────────────────
 
 function startOfLocalDay(d: Date): Date {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;
-}
-
-function mondayOfWeekContaining(d: Date): Date {
-  const date = startOfLocalDay(d);
-  const day = date.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + mondayOffset);
-  return date;
 }
 
 function sameCalendarDay(a: Date, b: Date): boolean {
@@ -34,113 +42,275 @@ function sameCalendarDay(a: Date, b: Date): boolean {
   );
 }
 
-function calendarDaysApart(a: Date, b: Date): number {
-  const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-  const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round(Math.abs(ua - ub) / 86400000);
-}
-
-function weekDaysForDate(anchor: Date): Date[] {
-  const monday = mondayOfWeekContaining(anchor);
+function weekDaysFromMonday(anchor: Date): Date[] {
+  const base = startOfLocalDay(anchor);
+  const day = base.getDay();
+  base.setDate(base.getDate() + (day === 0 ? -6 : 1 - day)); // rewind to Monday
   return Array.from({ length: 7 }, (_, i) => {
-    const x = new Date(monday);
-    x.setDate(monday.getDate() + i);
-    return x;
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return d;
   });
 }
 
+function cardLeftEdge(index: number, widths: (number | undefined)[]): number {
+  let x = SCROLL_EDGE_PADDING;
+  for (let i = 0; i < index; i++) x += (widths[i] as number) + CARD_GAP;
+  return x;
+}
+
+function isCardFullyVisible(
+  index: number,
+  widths: (number | undefined)[],
+  scrollX: number,
+  viewportWidth: number,
+): boolean {
+  const w = widths[index];
+  if (!w || viewportWidth <= 0) return true;
+  const left = cardLeftEdge(index, widths);
+  return (
+    left >= scrollX - VISIBILITY_EPS &&
+    left + w <= scrollX + viewportWidth + VISIBILITY_EPS
+  );
+}
+
+function routineLabelAt(
+  routineNames: (string | null | undefined)[] | undefined,
+  index: number,
+): string {
+  const raw = routineNames?.[index];
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  return trimmed.length > 0 ? trimmed : "Rest";
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
+
 type WeekDateSliderProps = {
   selectedDate: Date;
+  routineNames?: (string | null | undefined)[];
   onSelectDate: (date: Date) => void;
 };
 
 export default function WeekDateSlider({
   selectedDate,
+  routineNames,
   onSelectDate,
 }: WeekDateSliderProps) {
-  const today = startOfLocalDay(new Date());
-  const days = weekDaysForDate(today);
+  const days = useRef(weekDaysFromMonday(new Date())).current;
+
+  const scrollRef = useRef<ScrollView>(null);
+  const cardWidths = useRef<(number | undefined)[]>(Array(7).fill(undefined));
+  const contentWidthRef = useRef(0);
+  const viewportWidthRef = useRef(0);
+  const scrollXRef = useRef(0);
+  const scrollThrottleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const allWidthsReadyRef = useRef(false);
+
+  // Single render-trigger for opacity recalculation after scroll/layout changes
+  const [renderKey, setRenderKey] = useState(0);
+  const bump = useCallback(() => setRenderKey((n) => n + 1), []);
+
+  const selectedIndex = days.findIndex((d) => sameCalendarDay(d, selectedDate));
+
+  // ── scrolling ──────────────────────────────────────────────────────────────
+
+  const scrollToCenterIndex = useCallback((index: number) => {
+    if (!scrollRef.current) return;
+    const vw = viewportWidthRef.current;
+    const cw = contentWidthRef.current;
+    if (!allWidthsReadyRef.current || vw <= 0) return;
+
+    const cardW = cardWidths.current[index] as number;
+    const left = cardLeftEdge(index, cardWidths.current);
+    const target = Math.max(0, Math.min(left + cardW / 2 - vw / 2, cw - vw));
+
+    scrollRef.current.scrollTo({ x: target, animated: true });
+    scrollXRef.current = target;
+  }, []);
+
+  // Center on the selected card once all widths are measured
+  const onCardLayout = useCallback(
+    (index: number, e: LayoutChangeEvent) => {
+      cardWidths.current[index] = e.nativeEvent.layout.width;
+      if (allWidthsReadyRef.current) return;
+      if (cardWidths.current.every((w) => w != null && w > 0)) {
+        allWidthsReadyRef.current = true;
+        requestAnimationFrame(() => {
+          if (selectedIndex >= 0) scrollToCenterIndex(selectedIndex);
+          bump();
+        });
+      }
+    },
+    [selectedIndex, scrollToCenterIndex, bump],
+  );
+
+  const onScrollViewLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      viewportWidthRef.current = e.nativeEvent.layout.width;
+      bump();
+    },
+    [bump],
+  );
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      scrollXRef.current = e.nativeEvent.contentOffset.x;
+      if (scrollThrottleRef.current != null) return;
+      scrollThrottleRef.current = setTimeout(() => {
+        scrollThrottleRef.current = null;
+        bump();
+      }, SCROLL_THROTTLE_MS);
+    },
+    [bump],
+  );
+
+  const flushScroll = useCallback(() => bump(), [bump]);
+
+  useEffect(
+    () => () => {
+      if (scrollThrottleRef.current != null)
+        clearTimeout(scrollThrottleRef.current);
+    },
+    [],
+  );
+
+  // ── press ──────────────────────────────────────────────────────────────────
+
+  const handleCardPress = useCallback(
+    (day: Date, index: number) => {
+      onSelectDate(startOfLocalDay(day));
+      if (
+        allWidthsReadyRef.current &&
+        !isCardFullyVisible(
+          index,
+          cardWidths.current,
+          scrollXRef.current,
+          viewportWidthRef.current,
+        )
+      ) {
+        scrollToCenterIndex(index);
+      }
+    },
+    [onSelectDate, scrollToCenterIndex],
+  );
+
+  // ── render ─────────────────────────────────────────────────────────────────
+
+  const vw = viewportWidthRef.current;
+  const sx = scrollXRef.current;
 
   return (
-    <View style={styles.row}>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onLayout={onScrollViewLayout}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+      onScrollEndDrag={flushScroll}
+      onMomentumScrollEnd={flushScroll}
+      onContentSizeChange={(width) => {
+        contentWidthRef.current = width;
+      }}
+      contentContainerStyle={styles.scrollContent}
+    >
       {days.map((day, index) => {
         const isSelected = sameCalendarDay(day, selectedDate);
-        const isToday = sameCalendarDay(day, today);
-        const distanceFromToday = calendarDaysApart(day, today);
-        const proximityOpacity = Math.max(0.42, 1 - distanceFromToday * 0.11);
+        const routineLabel = routineLabelAt(routineNames, index);
+        const fullyVisible =
+          vw <= 0 || isCardFullyVisible(index, cardWidths.current, sx, vw);
 
         return (
           <Pressable
             key={`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`}
             accessibilityRole="button"
-            accessibilityLabel={`${WEEKDAY_LABELS[index]} ${day.getDate()}, ${day.getFullYear()}`}
+            accessibilityLabel={`DAY ${index + 1}, ${routineLabel}`}
             accessibilityState={{ selected: isSelected }}
-            onPress={() => onSelectDate(startOfLocalDay(day))}
+            onPress={() => handleCardPress(day, index)}
+            onLayout={(e) => onCardLayout(index, e)}
             style={({ pressed }) => [
-              styles.cell,
+              styles.card,
+              isSelected ? styles.cardSelected : styles.cardDefault,
+              index < 6 && styles.cardSpacing,
               {
-                opacity: isSelected
-                  ? 1
-                  : pressed
-                    ? Math.min(1, proximityOpacity + 0.12)
-                    : proximityOpacity,
+                opacity:
+                  pressed && !isSelected
+                    ? (fullyVisible ? 1 : CLIPPED_CARD_OPACITY) * 0.92
+                    : fullyVisible
+                      ? 1
+                      : CLIPPED_CARD_OPACITY,
               },
-              isSelected && styles.cellSelected,
-              isToday && !isSelected && styles.cellTodayOutline,
             ]}
           >
-            <Text
-              style={[styles.weekday, isSelected && styles.weekdaySelected]}
-            >
-              {WEEKDAY_LABELS[index]}
-            </Text>
-            <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>
-              {day.getDate()}
-            </Text>
+            <View>
+              <Text
+                style={[
+                  styles.daySlot,
+                  isSelected ? styles.textSelected : styles.textDefault,
+                ]}
+              >
+                {`DAY ${index + 1}`}
+              </Text>
+              <Text
+                style={[
+                  styles.routineName,
+                  isSelected ? styles.textSelected : styles.textDefault,
+                ]}
+              >
+                {routineLabel}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  scrollContent: {
     flexDirection: "row",
-    gap: theme.spacing.sm,
+    alignItems: "stretch",
+    paddingLeft: SCROLL_EDGE_PADDING,
+    paddingRight: SCROLL_EDGE_PADDING,
+    paddingVertical: 4,
   },
-  cell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xs,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.background.secondary,
+  card: {
+    paddingLeft: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingRight: 38.75,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "transparent",
+    justifyContent: "center",
   },
-  cellSelected: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+  cardSpacing: {
+    marginRight: CARD_GAP,
   },
-  cellTodayOutline: {
-    borderColor: theme.colors.border,
+  cardDefault: {
+    backgroundColor: COLORS.cardBg,
+    borderColor: COLORS.border,
   },
-  weekday: {
-    ...theme.typography.label,
-    fontSize: 11,
-    color: theme.colors.text.secondary,
-    marginBottom: 2,
+  cardSelected: {
+    backgroundColor: COLORS.cardBgSelected,
+    borderColor: COLORS.cardBgSelected,
   },
-  weekdaySelected: {
-    color: "rgba(255,255,255,0.92)",
+  daySlot: {
+    fontFamily: theme.fonts.semiBold,
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
   },
-  dayNum: {
-    ...theme.typography.metric,
-    fontSize: 18,
-    color: theme.colors.text.primary,
+  routineName: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 16,
+    fontWeight: "700",
   },
-  dayNumSelected: {
-    color: "#FFFFFF",
+  textDefault: {
+    color: COLORS.text,
+  },
+  textSelected: {
+    color: COLORS.textSelected,
   },
 });

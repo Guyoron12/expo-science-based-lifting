@@ -82,6 +82,9 @@ export default function WorkoutScreen() {
     >
       <WeekDateSlider
         selectedDate={selectedDate}
+        routineNames={Array.from({ length: 7 }, (_, i) =>
+          activeSplit.routines[i]?.name,
+        )}
         onSelectDate={setSelectedDate}
       />
     </ScrollView>
