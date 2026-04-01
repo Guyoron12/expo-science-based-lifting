@@ -1,6 +1,8 @@
 import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 type WorkoutHeaderProps = {
   title: string;
   subtitle: string;
@@ -8,8 +10,15 @@ type WorkoutHeaderProps = {
 
 export default function WorkoutHeader({ title, subtitle }: WorkoutHeaderProps) {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top + theme.spacing.lg },
+      ]}
+    >
       <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
         <Image
           source={require("@/assets/images/white-back-arrow.png")}
@@ -34,7 +43,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
   },
   backButton: {
