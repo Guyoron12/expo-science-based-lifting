@@ -1,12 +1,11 @@
-import { useNavigation } from "@react-navigation/native";
-import { useLayoutEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
-
-import { AppHeader } from "@/components/navigation/AppHeader";
 import WeekDateSlider from "@/components/ui/WeekDateSlider";
+import WorkoutHeader from "@/containers/headers/workout-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
+import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
+import { useLayoutEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text } from "react-native";
 type ActiveSplit = {
   id: number;
   name: string;
@@ -54,7 +53,7 @@ export default function WorkoutScreen() {
     if (activeSplit?.name) {
       navigation.setOptions({
         header: () => (
-          <AppHeader title={activeSplit.name} subtitle={subtitle} />
+          <WorkoutHeader title={activeSplit.name} subtitle={subtitle} />
         ),
       });
     } else {

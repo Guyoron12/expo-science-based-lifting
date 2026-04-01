@@ -1,12 +1,16 @@
+import { fonts } from "./fonts";
+
+export { interFontSources } from "./fonts";
+
 export const theme = {
   colors: {
     background: {
-      primary: "#0B0F14",
+      primary: "#0B1220",
       secondary: "#121821",
       card: "#161D26",
     },
     text: {
-      primary: "#E6EDF3",
+      primary: "#E6EEF8",
       secondary: "#9AA4B2",
       muted: "#6B7280",
     },
@@ -35,28 +39,34 @@ export const theme = {
     md: 12,
     lg: 16,
   },
+  fonts,
   typography: {
     display: {
+      fontFamily: fonts.bold,
       fontSize: 24,
       lineHeight: 30,
       fontWeight: "700" as const,
     },
     title: {
-      fontSize: 20,
-      lineHeight: 26,
-      fontWeight: "700" as const,
+      fontFamily: fonts.semiBold,
+      fontSize: 16,
+      lineHeight: 22,
+      fontWeight: "600" as const,
     },
     body: {
+      fontFamily: fonts.regular,
       fontSize: 15,
       lineHeight: 22,
       fontWeight: "400" as const,
     },
     label: {
+      fontFamily: fonts.semiBold,
       fontSize: 14,
       lineHeight: 20,
       fontWeight: "600" as const,
     },
     metric: {
+      fontFamily: fonts.bold,
       fontSize: 22,
       lineHeight: 28,
       fontWeight: "700" as const,
