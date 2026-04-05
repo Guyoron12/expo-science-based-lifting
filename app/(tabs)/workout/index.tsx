@@ -5,7 +5,7 @@ import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLayoutEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 type ActiveSplit = {
   id: number;
   name: string;
@@ -40,6 +40,7 @@ export default function WorkoutScreen() {
   const [selectedDate, setSelectedDate] = useState(() =>
     startOfLocalDay(new Date()),
   );
+  const [selectedRoutine, setSelectedRoutine] = useState(0);
   const {
     data: activeSplit,
     isLoading,
@@ -74,19 +75,29 @@ export default function WorkoutScreen() {
     return <Text>No active split</Text>;
   }
 
+  const routine = activeSplit.routines[selectedRoutine];
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.dateSliderContainer}>
       <WeekDateSlider
         selectedDate={selectedDate}
         routineNames={Array.from({ length: 7 }, (_, i) =>
           activeSplit.routines[i]?.name,
         )}
         onSelectDate={setSelectedDate}
+        onRoutineSelect={setSelectedRoutine}
       />
+      </View>
+      <View style={styles.routineContainer}>
+        <View style={styles.routineHeader}>
+          <Text style={styles.routineTitle}>{routine.name}</Text>
+          <Text style={styles.routineDetails}>{"routine.exercises.length"} exercises</Text>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -97,7 +108,29 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   content: {
-    padding: theme.spacing.lg,
-    gap: theme.spacing.lg,
+
+  },
+  dateSliderContainer: {
+    paddingVertical: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  routineContainer: {
+    paddingVertical: 24,
+    paddingBottom: 16,
+    paddingInline: 16,
+    gap: 24,
+  },
+  routineHeader: {
+    gap: 8,
+  },
+  routineTitle: {
+    ...theme.typography.display,
+    color: theme.colors.text.primary,
+  },
+  routineDetails: {
+    ...theme.typography.body,
+    color: "#89A2BF",
   },
 });

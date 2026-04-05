@@ -89,12 +89,14 @@ type WeekDateSliderProps = {
   selectedDate: Date;
   routineNames?: (string | null | undefined)[];
   onSelectDate: (date: Date) => void;
+  onRoutineSelect: (index: number) => void;
 };
 
 export default function WeekDateSlider({
   selectedDate,
   routineNames,
   onSelectDate,
+  onRoutineSelect,
 }: WeekDateSliderProps) {
   const days = useRef(weekDaysFromMonday(new Date())).current;
 
@@ -179,6 +181,7 @@ export default function WeekDateSlider({
   const handleCardPress = useCallback(
     (day: Date, index: number) => {
       onSelectDate(startOfLocalDay(day));
+      onRoutineSelect(index);
       if (
         allWidthsReadyRef.current &&
         !isCardFullyVisible(
@@ -274,7 +277,6 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     paddingLeft: SCROLL_EDGE_PADDING,
     paddingRight: SCROLL_EDGE_PADDING,
-    paddingVertical: 4,
   },
   card: {
     paddingLeft: 16,

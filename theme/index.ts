@@ -21,7 +21,7 @@ export const theme = {
       danger: "#EF4444",
       info: "#3B82F6",
     },
-    border: "rgba(154, 164, 178, 0.18)",
+    border: "rgba(255, 255, 255, 0.176)",
     disabled: {
       bg: "#1E2632",
       text: "#6B7280",
@@ -43,7 +43,7 @@ export const theme = {
   typography: {
     display: {
       fontFamily: fonts.bold,
-      fontSize: 24,
+      fontSize: 28,
       lineHeight: 30,
       fontWeight: "700" as const,
     },
