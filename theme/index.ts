@@ -36,6 +36,7 @@ export const theme = {
     "2xl": 24,
   },
   radius: {
+    xs: 8,
     md: 12,
     lg: 16,
   },

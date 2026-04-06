@@ -14,21 +14,72 @@ const split = {
         {
           id: 1,
           exerciseName: "Bench Press",
+          image:
+            "https://www.shutterstock.com/image-vector/bench-press-icon-glyphstyle-gym-260nw-1440715121.jpg",
           muscleGroups: [
             {
               id: 1,
               name: "Chest",
-              activation: "primary",
+              activation: {
+                label: "primary",
+                value: 1,
+              },
             },
             {
               id: 2,
               name: "Shoulders",
-              activation: "secondary",
+              activation: {
+                label: "secondary",
+                value: 0.5,
+              },
             },
             {
               id: 3,
               name: "Triceps",
-              activation: "stabilizer",
+              activation: {
+                label: "secondary",
+                value: 0.5,
+              },
+            },
+          ],
+        },
+        {
+          id: 2,
+          exerciseName: "Wide grip pull-ups",
+          image:
+            "https://cdn.vectorstock.com/i/1000v/30/32/pull-up-icon-vector-33743032.jpg",
+          muscleGroups: [
+            {
+              id: 1,
+              name: "Lats",
+              activation: {
+                label: "primary",
+                value: 1,
+              },
+            },
+            {
+              id: 2,
+              name: "Rhomboids",
+              activation: {
+                label: "secondary",
+                value: 0.75,
+              },
+            },
+            {
+              id: 3,
+              name: "Biceps",
+              activation: {
+                label: "secondary",
+                value: 0.6,
+              },
+            },
+            {
+              id: 4,
+              name: "Forearms",
+              activation: {
+                label: "stabilizer",
+                value: 0.2,
+              },
             },
           ],
         },

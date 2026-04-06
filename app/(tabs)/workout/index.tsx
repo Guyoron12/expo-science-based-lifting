@@ -5,7 +5,7 @@ import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useLayoutEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, View } from "react-native";
 type ActiveSplit = {
   id: number;
   name: string;
@@ -21,6 +21,7 @@ type Routine = {
 type Exercise = {
   id: number;
   exerciseName: string;
+  image: string;
   muscleGroups: MuscleGroup[];
 };
 type MuscleGroup = {
@@ -76,39 +77,79 @@ export default function WorkoutScreen() {
   }
 
   const routine = activeSplit.routines[selectedRoutine];
-  return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+  const isRestDay = routine === undefined;
+  const exercises = isRestDay ? [] : routine.exercises;
+  const weeklyRoutineNames = Array.from(
+    { length: 7 },
+    (_, i) => activeSplit.routines[i]?.name,
+  );
+
+  const listHeader = (
+    <>
       <View style={styles.dateSliderContainer}>
-      <WeekDateSlider
-        selectedDate={selectedDate}
-        routineNames={Array.from({ length: 7 }, (_, i) =>
-          activeSplit.routines[i]?.name,
-        )}
-        onSelectDate={setSelectedDate}
-        onRoutineSelect={setSelectedRoutine}
-      />
+        <WeekDateSlider
+          selectedDate={selectedDate}
+          routineNames={weeklyRoutineNames}
+          onSelectDate={setSelectedDate}
+          onRoutineSelect={setSelectedRoutine}
+        />
       </View>
+
       <View style={styles.routineContainer}>
-        <View style={styles.routineHeader}>
-          <Text style={styles.routineTitle}>{routine.name}</Text>
-          <Text style={styles.routineDetails}>{"routine.exercises.length"} exercises</Text>
-        </View>
+        {isRestDay ? ( //TODO: handle rest day
+          <View style={styles.routineHeader}>
+            <Text style={styles.routineTitle}>Rest Day</Text>
+          </View>
+        ) : (
+          <View style={styles.routineHeader}>
+            <Text style={styles.routineTitle}>{routine.name}</Text>
+            <Text style={styles.routineDetails}>
+              {routine.exercises.length > 0
+                ? `${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
+                : "No exercises · 0 minutes"}
+            </Text>
+          </View>
+        )}
       </View>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <FlatList
+      style={styles.list}
+      data={exercises}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item, index }) => (
+        <View style={styles.exerciseRowContainer}>
+          <View style={styles.exerciseRow}>
+            <View style={styles.exerciseImageContainer}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.exerciseImage}
+              />
+              <View style={styles.exerciseIndexContainer}>
+                <Text style={styles.exerciseIndexText}>{index + 1}</Text>
+              </View>
+            </View>
+            <Text style={styles.exerciseName}>{item.exerciseName}</Text>
+          </View>
+        </View>
+      )}
+      ListHeaderComponent={listHeader}
+      // ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+      contentContainerStyle={styles.listContent}
+      keyboardShouldPersistTaps="handled"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  list: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
-  content: {
-
+  listContent: {
+    gap: 16,
   },
   dateSliderContainer: {
     paddingVertical: 8,
@@ -117,10 +158,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   routineContainer: {
-    paddingVertical: 24,
-    paddingBottom: 16,
+    paddingTop: 24,
     paddingInline: 16,
-    gap: 24,
   },
   routineHeader: {
     gap: 8,
@@ -132,5 +171,51 @@ const styles = StyleSheet.create({
   routineDetails: {
     ...theme.typography.body,
     color: "#89A2BF",
+  },
+  exerciseRowContainer: {
+    paddingHorizontal: 16,
+  },
+  exerciseRow: {
+    width: "100%",
+    flexDirection: "row",
+    padding: theme.spacing.lg,
+    gap: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.xs,
+  },
+  exerciseName: {
+    ...theme.typography.body,
+    color: theme.colors.text.primary,
+  },
+  exerciseImageContainer: {
+    position: "relative",
+    width: 64,
+    height: 64,
+    borderRadius: theme.radius.xs,
+  },
+  exerciseImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: theme.radius.xs,
+  },
+  exerciseIndexContainer: {
+    position: "absolute",
+    top: -7,
+    left: -7,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: theme.radius.md,
+    backgroundColor: "#E6EEF8",
+    borderWidth: 0.5,
+    borderColor: "#0F1724",
+  },
+  exerciseIndexText: {
+    fontSize: 12,
+    fontFamily: theme.fonts.bold,
+    fontWeight: "700",
+    color: "#0B1220",
   },
 });
