@@ -14,6 +14,16 @@ const split = {
         {
           id: 1,
           exerciseName: "Bench Press",
+          sets: 3,
+          repRange: {
+            min: 8,
+            max: 12,
+          },
+          rir: {
+            min: 1,
+            max: 3,
+          },
+          lastSession: "205 lbs * 10,9,8",
           image:
             "https://www.shutterstock.com/image-vector/bench-press-icon-glyphstyle-gym-260nw-1440715121.jpg",
           muscleGroups: [
@@ -48,6 +58,16 @@ const split = {
           exerciseName: "Wide grip pull-ups",
           image:
             "https://cdn.vectorstock.com/i/1000v/30/32/pull-up-icon-vector-33743032.jpg",
+          sets: 2,
+          repRange: {
+            min: 5,
+            max: 9,
+          },
+          rir: {
+            min: 0,
+            max: 1,
+          },
+          lastSession: "8 repsssssssssssssssssssssssssssssssssssssssssssss",
           muscleGroups: [
             {
               id: 1,
