@@ -131,78 +131,101 @@ export default function WorkoutScreen() {
     </>
   );
 
+  const listFooter = (
+    <View style={styles.listFooter}>
+      <Pressable style={styles.listFooterButton}>
+        <Image
+          source={require("@/assets/images/start-workout-icon.png")}
+          style={styles.listFooterButtonImage}
+        />
+        <Text style={styles.listFooterButtonText}>Start Workout</Text>
+      </Pressable>
+      <Pressable>
+        <Text style={styles.listFooterEditButtonText}>
+          Edit planned workout
+        </Text>
+      </Pressable>
+    </View>
+  );
+
   return (
-    <FlatList
-      style={styles.list}
-      data={exercises}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item, index }) => (
-        <View style={styles.exerciseRowContainer}>
-          <View style={styles.exerciseRow}>
-            <View style={styles.exerciseImageContainer}>
-              <Image
-                source={{ uri: item.image }}
-                style={styles.exerciseImage}
-              />
-              <View style={styles.exerciseIndexContainer}>
-                <Text style={styles.exerciseIndexText}>{index + 1}</Text>
-              </View>
-            </View>
-            <View style={styles.exerciseInfoContainer}>
-              <View style={styles.exerciseNameRow}>
-                <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-                <Pressable style={styles.editButton} onPress={() => {}}>
-                  {/*TODO: handle edit button press */}
-                  <Image
-                    source={require("@/assets/images/edit-icon.png")}
-                    style={styles.editButtonImage}
-                  />
-                </Pressable>
-              </View>
-              <View style={styles.exercisePlannedStats}>
-                <View style={styles.plannedStatsItem}>
-                  <Text style={styles.itemLabel}>SETS</Text>
-                  <Text style={styles.itemValue}>{item.sets}</Text>
+    <View style={styles.screenContainer}>
+      <FlatList
+        style={styles.list}
+        data={exercises}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item, index }) => (
+          <View style={styles.exerciseRowContainer}>
+            <View style={styles.exerciseRow}>
+              <View style={styles.exerciseImageContainer}>
+                <Image
+                  source={{ uri: item.image }}
+                  style={styles.exerciseImage}
+                />
+                <View style={styles.exerciseIndexContainer}>
+                  <Text style={styles.exerciseIndexText}>{index + 1}</Text>
                 </View>
-                <View style={styles.plannedStatsItem}>
-                  <Text style={styles.itemLabel}>REPS</Text>
-                  <Text style={styles.itemValue}>
-                    {item.repRange.min}-{item.repRange.max}
+              </View>
+              <View style={styles.exerciseInfoContainer}>
+                <View style={styles.exerciseNameRow}>
+                  <Text style={styles.exerciseName}>{item.exerciseName}</Text>
+                  <Pressable style={styles.editButton} onPress={() => {}}>
+                    {/*TODO: handle edit button press */}
+                    <Image
+                      source={require("@/assets/images/edit-icon.png")}
+                      style={styles.editButtonImage}
+                    />
+                  </Pressable>
+                </View>
+                <View style={styles.exercisePlannedStats}>
+                  <View style={styles.plannedStatsItem}>
+                    <Text style={styles.itemLabel}>SETS</Text>
+                    <Text style={styles.itemValue}>{item.sets}</Text>
+                  </View>
+                  <View style={styles.plannedStatsItem}>
+                    <Text style={styles.itemLabel}>REPS</Text>
+                    <Text style={styles.itemValue}>
+                      {item.repRange.min}-{item.repRange.max}
+                    </Text>
+                  </View>
+                  <View style={styles.plannedStatsItem}>
+                    <Text style={styles.itemLabel}>RIR</Text>
+                    <Text style={styles.itemValue}>
+                      {item.rir.min}-{item.rir.max}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.lastSessionItem}>
+                  <Text style={styles.itemLabel}>LAST SESSION</Text>
+                  <Text
+                    style={[styles.itemValue, styles.lastSessionValue]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.lastSession}
                   </Text>
                 </View>
-                <View style={styles.plannedStatsItem}>
-                  <Text style={styles.itemLabel}>RIR</Text>
-                  <Text style={styles.itemValue}>
-                    {item.rir.min}-{item.rir.max}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.lastSessionItem}>
-                <Text style={styles.itemLabel}>LAST SESSION</Text>
-                <Text
-                  style={[styles.itemValue, styles.lastSessionValue]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.lastSession}
-                </Text>
               </View>
             </View>
           </View>
-        </View>
-      )}
-      ListHeaderComponent={listHeader}
-      // ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-      contentContainerStyle={styles.listContent}
-      keyboardShouldPersistTaps="handled"
-    />
+        )}
+        ListHeaderComponent={listHeader}
+        // ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+      />
+      {listFooter}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
+  screenContainer: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
     gap: 16,
@@ -337,5 +360,41 @@ const styles = StyleSheet.create({
   lastSessionValue: {
     flex: 1,
     minWidth: 0,
+  },
+  listFooter: {
+    paddingBottom: 32,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    gap: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listFooterButton: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 18,
+    backgroundColor: "#2F9BFF",
+    gap: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+  },
+  listFooterButtonImage: {
+    width: 20,
+    height: 20,
+  },
+  listFooterButtonText: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#061428",
+  },
+  listFooterEditButtonText: {
+    fontFamily: theme.fonts.regular,
+    fontSize: 14,
+    fontWeight: "400" as const,
+    color: "#89A2BF",
   },
 });
