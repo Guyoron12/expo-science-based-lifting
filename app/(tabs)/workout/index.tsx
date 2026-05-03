@@ -134,6 +134,7 @@ export default function WorkoutScreen() {
   const listFooter = (
     <View style={styles.listFooter}>
       <Pressable style={styles.listFooterButton}>
+        {/*TODO: handle start workout button press */}
         <Image
           source={require("@/assets/images/start-workout-icon.png")}
           style={styles.listFooterButtonImage}
@@ -141,6 +142,7 @@ export default function WorkoutScreen() {
         <Text style={styles.listFooterButtonText}>Start Workout</Text>
       </Pressable>
       <Pressable>
+        {/*TODO: handle edit button press */}
         <Text style={styles.listFooterEditButtonText}>
           Edit planned workout
         </Text>
