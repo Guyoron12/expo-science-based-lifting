@@ -1,10 +1,11 @@
 import WeekDateSlider from "@/components/ui/WeekDateSlider";
+import Loader from "@/components/ui/Loader";
 import WorkoutHeader from "@/containers/headers/workout-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -23,6 +24,8 @@ type ActiveSplit = {
 type Routine = {
   id: number;
   name: string;
+  date?: string;
+  status?: "completed" | "skipped" | "planned";
   exercises: Exercise[];
 };
 type Exercise = {
@@ -53,12 +56,42 @@ function startOfLocalDay(d: Date): Date {
   return x;
 }
 
+function weekDatesFromMonday(anchor: Date): Date[] {
+  const base = startOfLocalDay(anchor);
+  const day = base.getDay();
+  base.setDate(base.getDate() + (day === 0 ? -6 : 1 - day));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return d;
+  });
+}
+
+function parseIsoDateToLocalDay(isoDate: string): Date {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function getRoutineByDate(routines: Routine[], date: Date): Routine | undefined {
+  return routines.find((routine) => {
+    if (!routine.date) return false;
+    return isSameCalendarDay(parseIsoDateToLocalDay(routine.date), date);
+  });
+}
+
 export default function WorkoutScreen() {
   const navigation = useNavigation();
   const [selectedDate, setSelectedDate] = useState(() =>
     startOfLocalDay(new Date()),
   );
-  const [selectedRoutine, setSelectedRoutine] = useState(0);
   const {
     data: activeSplit,
     isLoading,
@@ -68,6 +101,7 @@ export default function WorkoutScreen() {
     queryFn: fetchActiveSplit as () => Promise<ActiveSplit>,
   });
   const subtitle = selectedDate.toLocaleDateString();
+
   useLayoutEffect(() => {
     if (activeSplit?.name) {
       navigation.setOptions({
@@ -82,7 +116,7 @@ export default function WorkoutScreen() {
 
   //TODO: handle loading
   if (isLoading) {
-    return <Text>Loading...</Text>;
+    return <Loader />;
   }
   //TODO: handle error
   if (error) {
@@ -93,13 +127,21 @@ export default function WorkoutScreen() {
     return <Text>No active split</Text>;
   }
 
-  const routine = activeSplit.routines[selectedRoutine];
-  const isRestDay = routine === undefined;
+  const routine = getRoutineByDate(activeSplit.routines, selectedDate);
+  const isSkippedDay = routine?.status === "skipped";
+  const isRestDay = !routine || isSkippedDay;
   const exercises = isRestDay ? [] : routine.exercises;
-  const weeklyRoutineNames = Array.from(
-    { length: 7 },
-    (_, i) => activeSplit.routines[i]?.name,
-  );
+  const weeklyRoutineNames = weekDatesFromMonday(selectedDate).map((day) => {
+    const dayRoutine = getRoutineByDate(activeSplit.routines, day);
+    if (!dayRoutine || dayRoutine.status === "skipped") return "Rest";
+    return dayRoutine.name;
+  });
+  const routineStatusLabel =
+    routine?.status === "completed"
+      ? "Completed"
+      : routine?.status === "skipped"
+        ? "Skipped"
+        : "Planned";
 
   const listHeader = (
     <>
@@ -108,22 +150,24 @@ export default function WorkoutScreen() {
           selectedDate={selectedDate}
           routineNames={weeklyRoutineNames}
           onSelectDate={setSelectedDate}
-          onRoutineSelect={setSelectedRoutine}
+          onRoutineSelect={() => {}}
         />
       </View>
 
       <View style={styles.routineContainer}>
         {isRestDay ? ( //TODO: handle rest day
           <View style={styles.routineHeader}>
-            <Text style={styles.routineTitle}>Rest Day</Text>
+            <Text style={styles.routineTitle}>
+              {isSkippedDay ? "Skipped Day" : "Rest Day"}
+            </Text>
           </View>
         ) : (
           <View style={styles.routineHeader}>
             <Text style={styles.routineTitle}>{routine.name}</Text>
             <Text style={styles.routineDetails}>
               {routine.exercises.length > 0
-                ? `${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
-                : "No exercises · 0 minutes"}
+                ? `${routineStatusLabel} · ${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
+                : `${routineStatusLabel} · No exercises · 0 minutes`}
             </Text>
           </View>
         )}

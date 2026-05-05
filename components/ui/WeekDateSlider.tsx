@@ -83,6 +83,10 @@ function routineLabelAt(
   return trimmed.length > 0 ? trimmed : "Rest";
 }
 
+function weekdayLabel(day: Date): string {
+  return day.toLocaleDateString(undefined, { weekday: "long" });
+}
+
 // ─── component ───────────────────────────────────────────────────────────────
 
 type WeekDateSliderProps = {
@@ -221,6 +225,7 @@ export default function WeekDateSlider({
       {days.map((day, index) => {
         const isSelected = sameCalendarDay(day, selectedDate);
         const routineLabel = routineLabelAt(routineNames, index);
+        const dayLabel = weekdayLabel(day);
         const fullyVisible =
           vw <= 0 || isCardFullyVisible(index, cardWidths.current, sx, vw);
 
@@ -228,7 +233,7 @@ export default function WeekDateSlider({
           <Pressable
             key={`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`}
             accessibilityRole="button"
-            accessibilityLabel={`DAY ${index + 1}, ${routineLabel}`}
+            accessibilityLabel={`${dayLabel}, ${routineLabel}`}
             accessibilityState={{ selected: isSelected }}
             onPress={() => handleCardPress(day, index)}
             onLayout={(e) => onCardLayout(index, e)}
@@ -253,7 +258,7 @@ export default function WeekDateSlider({
                   isSelected ? styles.textSelected : styles.textDefault,
                 ]}
               >
-                {`DAY ${index + 1}`}
+                {dayLabel}
               </Text>
               <Text
                 style={[
