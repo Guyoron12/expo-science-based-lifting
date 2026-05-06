@@ -103,20 +103,20 @@ export default function WorkoutScreen() {
   const subtitle = selectedDate.toLocaleDateString();
 
   useLayoutEffect(() => {
-    if (activeSplit?.name) {
-      navigation.setOptions({
-        header: () => (
-          <WorkoutHeader title={activeSplit.name} subtitle={subtitle} />
-        ),
-      });
-    } else {
-      navigation.setOptions({ header: undefined });
-    }
+    navigation.setOptions({
+      header: () => (
+        <WorkoutHeader title={activeSplit?.name ?? "Workout"} subtitle={subtitle} />
+      ),
+    });
   }, [navigation, activeSplit, subtitle]);
 
   //TODO: handle loading
   if (isLoading) {
-    return <Loader />;
+    return (
+      <View style={styles.screenContainer}>
+        <Loader />
+      </View>
+    );
   }
   //TODO: handle error
   if (error) {
