@@ -1,11 +1,12 @@
-import WeekDateSlider from "@/components/ui/WeekDateSlider";
 import Loader from "@/components/ui/Loader";
+import WeekDateSlider from "@/components/ui/WeekDateSlider";
 import WorkoutHeader from "@/containers/headers/workout-header";
+import WorkoutListFooter from "@/containers/workout/list-footer";
 import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -80,7 +81,10 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
   );
 }
 
-function getRoutineByDate(routines: Routine[], date: Date): Routine | undefined {
+function getRoutineByDate(
+  routines: Routine[],
+  date: Date,
+): Routine | undefined {
   return routines.find((routine) => {
     if (!routine.date) return false;
     return isSameCalendarDay(parseIsoDateToLocalDay(routine.date), date);
@@ -105,7 +109,10 @@ export default function WorkoutScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       header: () => (
-        <WorkoutHeader title={activeSplit?.name ?? "Workout"} subtitle={subtitle} />
+        <WorkoutHeader
+          title={activeSplit?.name ?? "Workout"}
+          subtitle={subtitle}
+        />
       ),
     });
   }, [navigation, activeSplit, subtitle]);
@@ -175,24 +182,10 @@ export default function WorkoutScreen() {
     </>
   );
 
-  const listFooter = (
-    <View style={styles.listFooter}>
-      <Pressable style={styles.listFooterButton}>
-        {/*TODO: handle start workout button press */}
-        <Image
-          source={require("@/assets/images/start-workout-icon.png")}
-          style={styles.listFooterButtonImage}
-        />
-        <Text style={styles.listFooterButtonText}>Start Workout</Text>
-      </Pressable>
-      <Pressable>
-        {/*TODO: handle edit button press */}
-        <Text style={styles.listFooterEditButtonText}>
-          Edit planned workout
-        </Text>
-      </Pressable>
-    </View>
-  );
+  /*TODO: handle edit button press */
+  const handleEditExercisePress = (exercise: Exercise) => {
+    console.log("Edit exercise:", exercise);
+  };
 
   return (
     <View style={styles.screenContainer}>
@@ -215,8 +208,10 @@ export default function WorkoutScreen() {
               <View style={styles.exerciseInfoContainer}>
                 <View style={styles.exerciseNameRow}>
                   <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-                  <Pressable style={styles.editButton} onPress={() => {}}>
-                    {/*TODO: handle edit button press */}
+                  <Pressable
+                    style={styles.editButton}
+                    onPress={() => handleEditExercisePress(item)}
+                  >
                     <Image
                       source={require("@/assets/images/edit-icon.png")}
                       style={styles.editButtonImage}
@@ -260,7 +255,7 @@ export default function WorkoutScreen() {
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
       />
-      {listFooter}
+      {<WorkoutListFooter isRestDay={isRestDay} />}
     </View>
   );
 }
@@ -406,41 +401,5 @@ const styles = StyleSheet.create({
   lastSessionValue: {
     flex: 1,
     minWidth: 0,
-  },
-  listFooter: {
-    paddingBottom: 32,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    gap: theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  listFooterButton: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 18,
-    backgroundColor: "#2F9BFF",
-    gap: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-  },
-  listFooterButtonImage: {
-    width: 20,
-    height: 20,
-  },
-  listFooterButtonText: {
-    fontFamily: theme.fonts.bold,
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#061428",
-  },
-  listFooterEditButtonText: {
-    fontFamily: theme.fonts.regular,
-    fontSize: 14,
-    fontWeight: "400" as const,
-    color: "#89A2BF",
   },
 });
