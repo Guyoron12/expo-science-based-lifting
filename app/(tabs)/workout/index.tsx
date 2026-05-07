@@ -1,7 +1,7 @@
 import Loader from "@/components/ui/Loader";
-import WeekDateSlider from "@/components/ui/WeekDateSlider";
 import WorkoutHeader from "@/containers/headers/workout-header";
 import WorkoutListFooter from "@/containers/workout/list-footer";
+import WorkoutListHeader from "@/containers/workout/list-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
 import { theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
@@ -150,37 +150,10 @@ export default function WorkoutScreen() {
         ? "Skipped"
         : "Planned";
 
-  const listHeader = (
-    <>
-      <View style={styles.dateSliderContainer}>
-        <WeekDateSlider
-          selectedDate={selectedDate}
-          routineNames={weeklyRoutineNames}
-          onSelectDate={setSelectedDate}
-          onRoutineSelect={() => {}}
-        />
-      </View>
-
-      <View style={styles.routineContainer}>
-        {isRestDay ? ( //TODO: handle rest day
-          <View style={styles.routineHeader}>
-            <Text style={styles.routineTitle}>
-              {isSkippedDay ? "Skipped Day" : "Rest Day"}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.routineHeader}>
-            <Text style={styles.routineTitle}>{routine.name}</Text>
-            <Text style={styles.routineDetails}>
-              {routine.exercises.length > 0
-                ? `${routineStatusLabel} · ${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
-                : `${routineStatusLabel} · No exercises · 0 minutes`}
-            </Text>
-          </View>
-        )}
-      </View>
-    </>
-  );
+  const routineDetailsText =
+    routine && routine.exercises.length > 0
+      ? `${routineStatusLabel} · ${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
+      : `${routineStatusLabel} · No exercises · 0 minutes`;
 
   /*TODO: handle edit button press */
   const handleEditExercisePress = (exercise: Exercise) => {
@@ -250,12 +223,22 @@ export default function WorkoutScreen() {
             </View>
           </View>
         )}
-        ListHeaderComponent={listHeader}
+        ListHeaderComponent={
+          <WorkoutListHeader
+            selectedDate={selectedDate}
+            routineNames={weeklyRoutineNames}
+            onSelectDate={setSelectedDate}
+            isRestDay={isRestDay}
+            isSkippedDay={isSkippedDay}
+            routineName={routine?.name}
+            routineDetailsText={routineDetailsText}
+          />
+        }
         // ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
       />
-      {<WorkoutListFooter isRestDay={isRestDay} />}
+      <WorkoutListFooter isRestDay={isRestDay} />
     </View>
   );
 }
@@ -270,27 +253,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     gap: 16,
-  },
-  dateSliderContainer: {
-    paddingVertical: 8,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  routineContainer: {
-    paddingTop: 24,
-    paddingInline: 16,
-  },
-  routineHeader: {
-    gap: 8,
-  },
-  routineTitle: {
-    ...theme.typography.display,
-    color: theme.colors.text.primary,
-  },
-  routineDetails: {
-    ...theme.typography.body,
-    color: "#89A2BF",
   },
   exerciseRowContainer: {
     paddingHorizontal: 16,
