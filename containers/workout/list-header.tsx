@@ -1,6 +1,7 @@
 import WeekDateSlider from "@/components/ui/WeekDateSlider";
-import { theme } from "@/theme";
-import { StyleSheet, Text, View } from "react-native";
+import { hudColors, hudTypography, theme } from "@/theme";
+import { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 
 type WorkoutListHeaderProps = {
   selectedDate: Date;
@@ -21,6 +22,30 @@ export default function WorkoutListHeader({
   routineName,
   routineDetailsText,
 }: WorkoutListHeaderProps) {
+  const restScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!isRestDay) return;
+    const breathing = Animated.loop(
+      Animated.sequence([
+        Animated.timing(restScale, {
+          toValue: 1.03,
+          duration: 2200,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(restScale, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    breathing.start();
+    return () => breathing.stop();
+  }, [isRestDay, restScale]);
+
   return (
     <>
       <View style={styles.dateSliderContainer}>
@@ -34,11 +59,15 @@ export default function WorkoutListHeader({
 
       <View style={styles.routineContainer}>
         {isRestDay ? (
-          <View style={styles.routineHeader}>
+          <Animated.View
+            style={[styles.restDayCard, { transform: [{ scale: restScale }] }]}
+          >
+            <View style={styles.restOrb} />
             <Text style={styles.routineTitle}>
               {isSkippedDay ? "Skipped Day" : "Rest Day"}
             </Text>
-          </View>
+            <Text style={styles.routineDetails}>Recovery protocol active</Text>
+          </Animated.View>
         ) : (
           <View style={styles.routineHeader}>
             <Text style={styles.routineTitle}>{routineName}</Text>
@@ -55,7 +84,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: hudColors.border,
   },
   routineContainer: {
     paddingTop: 24,
@@ -64,12 +93,34 @@ const styles = StyleSheet.create({
   routineHeader: {
     gap: 8,
   },
+  restDayCard: {
+    gap: 8,
+    borderWidth: 1,
+    borderColor: hudColors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: hudColors.surface,
+    padding: theme.spacing.lg,
+  },
+  restOrb: {
+    width: 64,
+    height: 64,
+    borderRadius: 999,
+    backgroundColor: "rgba(0, 255, 135, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 255, 135, 0.35)",
+    shadowColor: hudColors.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+  },
   routineTitle: {
     ...theme.typography.display,
-    color: theme.colors.text.primary,
+    color: hudColors.textPrimary,
+    ...hudTypography.headingTight,
   },
   routineDetails: {
     ...theme.typography.body,
-    color: "#89A2BF",
+    color: hudColors.textMuted,
+    ...hudTypography.mono,
   },
 });

@@ -1,4 +1,4 @@
-import { theme } from "@/theme";
+import { hudColors, hudTypography, theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,17 +45,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
-    backgroundColor: theme.colors.background.primary,
+    backgroundColor: hudColors.backgroundPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: hudColors.border,
   },
   backButton: {
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: hudColors.border,
+    borderRadius: 999,
+    backgroundColor: hudColors.surface,
   },
   backButtonImage: {
     width: 24,
     height: 24,
+    tintColor: hudColors.accent,
   },
   titleContainer: {
     justifyContent: "center",
@@ -63,20 +70,27 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.title,
-    color: theme.colors.text.primary,
+    color: hudColors.textPrimary,
+    ...hudTypography.headingTight,
   },
   subtitle: {
     ...theme.typography.body,
-    color: theme.colors.text.secondary,
+    color: hudColors.textMuted,
+    ...hudTypography.mono,
   },
   menuButton: {
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: hudColors.border,
+    borderRadius: 999,
+    backgroundColor: hudColors.surface,
   },
   menuButtonImage: {
     width: 24,
     height: 24,
+    tintColor: hudColors.accent,
   },
 });

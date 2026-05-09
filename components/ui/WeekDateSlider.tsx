@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-import { theme } from "@/theme";
+import { hudColors, hudTypography, theme } from "@/theme";
 
 const CARD_GAP = 12;
 const SCROLL_EDGE_PADDING = 16;
@@ -19,11 +19,11 @@ const VISIBILITY_EPS = 2;
 const SCROLL_THROTTLE_MS = 32;
 
 const COLORS = {
-  cardBg: "#0F1724",
-  cardBgSelected: "#2F9BFF",
-  border: "rgba(255, 255, 255, 0.176)",
-  text: "#E6EEF8",
-  textSelected: "#061428",
+  cardBg: "rgba(0, 255, 135, 0.03)",
+  cardBgSelected: "#00FF87",
+  border: "rgba(0, 255, 135, 0.25)",
+  text: "#FFFFFF",
+  textSelected: "#00170D",
 } as const;
 
 // ─── pure helpers ────────────────────────────────────────────────────────────
@@ -284,13 +284,13 @@ const styles = StyleSheet.create({
     paddingRight: SCROLL_EDGE_PADDING,
   },
   card: {
-    paddingLeft: 16,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    paddingRight: 38.75,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     justifyContent: "center",
+    minWidth: 118,
   },
   cardSpacing: {
     marginRight: CARD_GAP,
@@ -301,18 +301,21 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     backgroundColor: COLORS.cardBgSelected,
-    borderColor: COLORS.cardBgSelected,
+    borderColor: hudColors.accentHot,
   },
   daySlot: {
-    fontFamily: theme.fonts.semiBold,
-    fontSize: 12,
-    fontWeight: "600",
+    fontFamily: theme.fonts.bold,
+    fontSize: 10,
+    fontWeight: "700",
     marginBottom: 4,
+    ...hudTypography.labelWide,
+    ...hudTypography.mono,
   },
   routineName: {
     fontFamily: theme.fonts.bold,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
+    ...hudTypography.headingTight,
   },
   textDefault: {
     color: COLORS.text,

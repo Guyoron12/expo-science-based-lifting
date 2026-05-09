@@ -1,6 +1,8 @@
 import { fonts } from "./fonts";
+import { hudColors, hudTypography } from "./hud";
 
 export { interFontSources } from "./fonts";
+export { hudColors, hudTypography } from "./hud";
 
 export const theme = {
   colors: {
@@ -83,6 +85,10 @@ export const theme = {
       shadowOffset: { width: 0, height: 5 },
       elevation: 4,
     },
+  },
+  hud: {
+    colors: hudColors,
+    typography: hudTypography,
   },
 } as const;
 

@@ -3,16 +3,20 @@ import WorkoutHeader from "@/containers/headers/workout-header";
 import WorkoutListFooter from "@/containers/workout/list-footer";
 import WorkoutListHeader from "@/containers/workout/list-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
-import { theme } from "@/theme";
+import { hudColors, theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Easing,
   FlatList,
   Image,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   View,
 } from "react-native";
 type ActiveSplit = {
@@ -91,11 +95,181 @@ function getRoutineByDate(
   });
 }
 
+type AnimatedCounterProps = {
+  value: number;
+  suffix?: string;
+  duration?: number;
+  style?: StyleProp<TextStyle>;
+};
+
+function AnimatedCounter({
+  value,
+  suffix = "",
+  duration = 600,
+  style,
+}: AnimatedCounterProps) {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    animatedValue.setValue(0);
+    const listener = animatedValue.addListener(({ value: next }) => {
+      setDisplayValue(Math.round(next));
+    });
+
+    Animated.timing(animatedValue, {
+      toValue: value,
+      duration,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+
+    return () => {
+      animatedValue.removeListener(listener);
+    };
+  }, [animatedValue, duration, value]);
+
+  return (
+    <Text style={style}>
+      {displayValue}
+      {suffix}
+    </Text>
+  );
+}
+
+type ExerciseRowProps = {
+  item: Exercise;
+  index: number;
+  onEdit: (exercise: Exercise) => void;
+  onPRPulse: () => void;
+};
+
+function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
+  const entryOpacity = useRef(new Animated.Value(0)).current;
+  const entryTranslate = useRef(new Animated.Value(16)).current;
+  const prScale = useRef(new Animated.Value(1)).current;
+
+  const isPR = /pr|personal record|pb/i.test(item.lastSession);
+
+  useEffect(() => {
+    const staggerDelay = index * 60;
+
+    const animations = [
+      Animated.timing(entryOpacity, {
+        toValue: 1,
+        duration: 420,
+        delay: staggerDelay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(entryTranslate, {
+        toValue: 0,
+        duration: 440,
+        delay: staggerDelay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ];
+
+    if (isPR) {
+      animations.push(
+        Animated.sequence([
+          Animated.delay(staggerDelay + 140),
+          Animated.spring(prScale, {
+            toValue: 1.03,
+            friction: 7,
+            tension: 100,
+            useNativeDriver: true,
+          }),
+          Animated.spring(prScale, {
+            toValue: 1,
+            friction: 8,
+            tension: 90,
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      onPRPulse();
+    }
+
+    Animated.parallel(animations).start();
+  }, [entryOpacity, entryTranslate, index, isPR, onPRPulse, prScale]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.exerciseRowContainer,
+        {
+          opacity: entryOpacity,
+          transform: [{ translateY: entryTranslate }, { scale: prScale }],
+        },
+      ]}
+    >
+      <View style={styles.exerciseRow}>
+        <View style={styles.exerciseImageContainer}>
+          <Image source={{ uri: item.image }} style={styles.exerciseImage} />
+          <View style={styles.exerciseIndexContainer}>
+            <Text style={styles.exerciseIndexText}>{index + 1}</Text>
+          </View>
+        </View>
+        <View style={styles.exerciseInfoContainer}>
+          <View style={styles.exerciseNameRow}>
+            <Text style={styles.exerciseName}>{item.exerciseName}</Text>
+            <Pressable style={styles.editButton} onPress={() => onEdit(item)}>
+              <Image
+                source={require("@/assets/images/edit-icon.png")}
+                style={styles.editButtonImage}
+              />
+            </Pressable>
+          </View>
+          <View style={styles.exercisePlannedStats}>
+            <View style={styles.plannedStatsItem}>
+              <Text style={styles.itemLabel}>SETS</Text>
+              <AnimatedCounter value={item.sets} style={styles.itemValue} />
+            </View>
+            <View style={styles.plannedStatsItem}>
+              <Text style={styles.itemLabel}>REPS</Text>
+              <Text style={styles.itemValue}>
+                {item.repRange.min}-{item.repRange.max}
+              </Text>
+            </View>
+            <View style={styles.plannedStatsItem}>
+              <Text style={styles.itemLabel}>RIR</Text>
+              <Text style={styles.itemValue}>
+                {item.rir.min}-{item.rir.max}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.lastSessionItem}>
+            <Text style={styles.itemLabel}>LAST SESSION</Text>
+            <Text
+              style={[
+                styles.itemValue,
+                styles.lastSessionValue,
+                isPR && styles.lastSessionValueHighlight,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.lastSession}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function WorkoutScreen() {
   const navigation = useNavigation();
   const [selectedDate, setSelectedDate] = useState(() =>
     startOfLocalDay(new Date()),
   );
+  const pageOpacity = useRef(new Animated.Value(0)).current;
+  const pageTranslateX = useRef(new Animated.Value(20)).current;
+  const introFlashOpacity = useRef(new Animated.Value(0)).current;
+  const prFlashOpacity = useRef(new Animated.Value(0)).current;
+  const hasTriggeredPrFlash = useRef(false);
   const {
     data: activeSplit,
     isLoading,
@@ -105,6 +279,67 @@ export default function WorkoutScreen() {
     queryFn: fetchActiveSplit as () => Promise<ActiveSplit>,
   });
   const subtitle = selectedDate.toLocaleDateString();
+
+  const grainDots = useMemo(
+    () =>
+      Array.from({ length: 36 }, (_, i) => ({
+        key: i.toString(),
+        top: (i * 31) % 760,
+        left: (i * 53) % 360,
+        size: i % 3 === 0 ? 2 : 1,
+      })),
+    [],
+  );
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(pageOpacity, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(pageTranslateX, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(introFlashOpacity, {
+          toValue: 0.28,
+          duration: 120,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(introFlashOpacity, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [introFlashOpacity, pageOpacity, pageTranslateX]);
+
+  const triggerPRFlash = () => {
+    if (hasTriggeredPrFlash.current) return;
+    hasTriggeredPrFlash.current = true;
+    Animated.sequence([
+      Animated.timing(prFlashOpacity, {
+        toValue: 0.55,
+        duration: 90,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(prFlashOpacity, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -162,83 +397,64 @@ export default function WorkoutScreen() {
 
   return (
     <View style={styles.screenContainer}>
-      <FlatList
-        style={styles.list}
-        data={exercises}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => (
-          <View style={styles.exerciseRowContainer}>
-            <View style={styles.exerciseRow}>
-              <View style={styles.exerciseImageContainer}>
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.exerciseImage}
-                />
-                <View style={styles.exerciseIndexContainer}>
-                  <Text style={styles.exerciseIndexText}>{index + 1}</Text>
-                </View>
-              </View>
-              <View style={styles.exerciseInfoContainer}>
-                <View style={styles.exerciseNameRow}>
-                  <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-                  <Pressable
-                    style={styles.editButton}
-                    onPress={() => handleEditExercisePress(item)}
-                  >
-                    <Image
-                      source={require("@/assets/images/edit-icon.png")}
-                      style={styles.editButtonImage}
-                    />
-                  </Pressable>
-                </View>
-                <View style={styles.exercisePlannedStats}>
-                  <View style={styles.plannedStatsItem}>
-                    <Text style={styles.itemLabel}>SETS</Text>
-                    <Text style={styles.itemValue}>{item.sets}</Text>
-                  </View>
-                  <View style={styles.plannedStatsItem}>
-                    <Text style={styles.itemLabel}>REPS</Text>
-                    <Text style={styles.itemValue}>
-                      {item.repRange.min}-{item.repRange.max}
-                    </Text>
-                  </View>
-                  <View style={styles.plannedStatsItem}>
-                    <Text style={styles.itemLabel}>RIR</Text>
-                    <Text style={styles.itemValue}>
-                      {item.rir.min}-{item.rir.max}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.lastSessionItem}>
-                  <Text style={styles.itemLabel}>LAST SESSION</Text>
-                  <Text
-                    style={[styles.itemValue, styles.lastSessionValue]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.lastSession}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-        ListHeaderComponent={
-          <WorkoutListHeader
-            selectedDate={selectedDate}
-            routineNames={weeklyRoutineNames}
-            onSelectDate={setSelectedDate}
-            isRestDay={isRestDay}
-            isSkippedDay={isSkippedDay}
-            routineName={routine?.name}
-            routineDetailsText={routineDetailsText}
+      <View pointerEvents="none" style={styles.scanlineLayer}>
+        {Array.from({ length: 70 }).map((_, i) => (
+          <View key={`line-${i}`} style={[styles.scanline, { top: i * 14 }]} />
+        ))}
+      </View>
+      <View pointerEvents="none" style={styles.grainLayer}>
+        {grainDots.map((dot) => (
+          <View
+            key={dot.key}
+            style={[
+              styles.grainDot,
+              { top: dot.top, left: dot.left, width: dot.size, height: dot.size },
+            ]}
           />
-        }
-        // ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-      />
+        ))}
+      </View>
+      <Animated.View
+        style={[
+          styles.listContainer,
+          { opacity: pageOpacity, transform: [{ translateX: pageTranslateX }] },
+        ]}
+      >
+        <FlatList
+          style={styles.list}
+          data={exercises}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item, index }) => (
+            <ExerciseRow
+              item={item}
+              index={index}
+              onEdit={handleEditExercisePress}
+              onPRPulse={triggerPRFlash}
+            />
+          )}
+          ListHeaderComponent={
+            <WorkoutListHeader
+              selectedDate={selectedDate}
+              routineNames={weeklyRoutineNames}
+              onSelectDate={setSelectedDate}
+              isRestDay={isRestDay}
+              isSkippedDay={isSkippedDay}
+              routineName={routine?.name}
+              routineDetailsText={routineDetailsText}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+        />
+      </Animated.View>
       <WorkoutListFooter isRestDay={isRestDay} />
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.flashFrame, { opacity: introFlashOpacity }]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.prFlash, { opacity: prFlashOpacity }]}
+      />
     </View>
   );
 }
@@ -246,13 +462,37 @@ export default function WorkoutScreen() {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background.primary,
+    backgroundColor: hudColors.backgroundPrimary,
+  },
+  listContainer: {
+    flex: 1,
+  },
+  scanlineLayer: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.08,
+  },
+  scanline: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: "rgba(0, 255, 135, 0.06)",
+  },
+  grainLayer: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.22,
+  },
+  grainDot: {
+    position: "absolute",
+    borderRadius: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   list: {
     flex: 1,
   },
   listContent: {
     gap: 16,
+    paddingBottom: 20,
   },
   exerciseRowContainer: {
     paddingHorizontal: 16,
@@ -263,8 +503,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     gap: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.xs,
+    borderColor: hudColors.border,
+    borderRadius: theme.radius.md,
+    backgroundColor: hudColors.surface,
+    shadowColor: hudColors.accent,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
   },
   exerciseImageContainer: {
     position: "relative",
@@ -285,16 +531,16 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: theme.radius.md,
-    backgroundColor: "#E6EEF8",
-    borderWidth: 0.5,
-    borderColor: "#0F1724",
+    borderRadius: 999,
+    backgroundColor: hudColors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: hudColors.borderStrong,
   },
   exerciseIndexText: {
     fontSize: 12,
     fontFamily: theme.fonts.bold,
     fontWeight: "700",
-    color: "#0B1220",
+    color: hudColors.textHighlight,
   },
   exerciseInfoContainer: {
     flex: 1,
@@ -308,17 +554,24 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     ...theme.typography.title,
-    color: theme.colors.text.primary,
+    color: hudColors.textPrimary,
+    letterSpacing: -0.32,
+    textTransform: "uppercase",
   },
   editButton: {
-    width: 20,
-    height: 20,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: hudColors.border,
+    borderRadius: 999,
+    backgroundColor: "rgba(0, 255, 135, 0.03)",
   },
   editButtonImage: {
     width: 13.33,
     height: 1.67,
+    tintColor: hudColors.accent,
   },
   exercisePlannedStats: {
     flexDirection: "row",
@@ -332,20 +585,23 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.base,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: hudColors.border,
     borderRadius: theme.radius.sm,
+    backgroundColor: "rgba(13, 43, 26, 0.35)",
   },
   itemLabel: {
-    fontFamily: theme.fonts.semiBold,
+    fontFamily: theme.fonts.bold,
     fontSize: 11,
-    fontWeight: "600" as const,
-    color: "#89A2BF",
+    fontWeight: "700" as const,
+    color: hudColors.textDim,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
   },
   itemValue: {
-    fontFamily: theme.fonts.semiBold,
-    fontSize: 13,
-    fontWeight: "600" as const,
-    color: theme.colors.text.primary,
+    fontFamily: theme.fonts.bold,
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: hudColors.textHighlight,
   },
   lastSessionItem: {
     flexDirection: "row",
@@ -356,12 +612,26 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.base,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: hudColors.border,
     borderRadius: theme.radius.sm,
     overflow: "hidden",
+    backgroundColor: "rgba(13, 43, 26, 0.35)",
   },
   lastSessionValue: {
     flex: 1,
     minWidth: 0,
+  },
+  lastSessionValueHighlight: {
+    color: hudColors.accentHot,
+  },
+  flashFrame: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: hudColors.accent,
+    backgroundColor: hudColors.flash,
+  },
+  prFlash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(57, 255, 20, 0.16)",
   },
 });
