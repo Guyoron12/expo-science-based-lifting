@@ -1,42 +1,42 @@
 import { fonts } from "./fonts";
-import { hudColors, hudTypography } from "./hud";
+import { hudColors, hudMotion, hudShadow, hudTypography } from "./hud";
 
 export { interFontSources } from "./fonts";
-export { hudColors, hudTypography } from "./hud";
+export { hudColors, hudMotion, hudShadow, hudTypography } from "./hud";
 
 export const theme = {
   colors: {
     background: {
-      primary: "#0B1220",
-      secondary: "#121821",
-      card: "#161D26",
+      primary: hudColors.backgroundPrimary,
+      secondary: hudColors.backgroundSecondary,
+      card: hudColors.surface,
     },
     text: {
-      primary: "#E6EEF8",
-      secondary: "#9AA4B2",
-      muted: "#6B7280",
+      primary: hudColors.textPrimary,
+      secondary: hudColors.textSecondary,
+      muted: hudColors.textMuted,
     },
-    accent: "#3B82F6",
+    accent: hudColors.accent,
     semantic: {
-      success: "#22C55E",
+      success: hudColors.accentSecondary,
       warning: "#F59E0B",
-      danger: "#EF4444",
-      info: "#3B82F6",
+      danger: hudColors.danger,
+      info: hudColors.accentSoft,
     },
-    border: "rgba(255, 255, 255, 0.176)",
+    border: hudColors.border,
     disabled: {
-      bg: "#1E2632",
-      text: "#6B7280",
+      bg: hudColors.backgroundTertiary,
+      text: hudColors.textMuted,
     },
   },
   spacing: {
     xs: 4,
     sm: 8,
-    base: 10,
+    base: 12,
     md: 12,
     lg: 16,
-    xl: 20,
-    "2xl": 24,
+    xl: 24,
+    "2xl": 32,
   },
   radius: {
     sm: 6,
@@ -79,15 +79,13 @@ export const theme = {
   },
   shadow: {
     card: {
-      shadowColor: "#000000",
-      shadowOpacity: 0.22,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 5 },
-      elevation: 4,
+      ...hudShadow.card,
     },
   },
   hud: {
     colors: hudColors,
+    motion: hudMotion,
+    shadow: hudShadow,
     typography: hudTypography,
   },
 } as const;

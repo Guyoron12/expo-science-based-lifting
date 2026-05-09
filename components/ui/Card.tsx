@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
 
-import { theme } from "@/theme";
+import { hudColors, hudShadow, theme } from "@/theme";
 
 type CardProps = {
   children: ReactNode;
@@ -14,11 +14,11 @@ export function Card({ children, style }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.background.card,
+    backgroundColor: hudColors.surface,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow.card,
+    borderColor: hudColors.border,
+    ...hudShadow.card,
   },
 });

@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/theme";
+import { hudColors, theme } from "@/theme";
 
 type LoaderProps = {
   label?: string;
@@ -9,7 +9,7 @@ type LoaderProps = {
 export default function Loader({ label = "Loading..." }: LoaderProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="small" color={theme.colors.accent} />
+      <ActivityIndicator size="small" color={hudColors.accent} />
       <Text style={styles.label}>{label}</Text>
     </View>
   );
@@ -21,10 +21,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: theme.spacing.md,
-    backgroundColor: theme.colors.background.primary,
+    backgroundColor: hudColors.backgroundPrimary,
   },
   label: {
     ...theme.typography.body,
-    color: theme.colors.text.secondary,
+    color: hudColors.textSecondary,
   },
 });

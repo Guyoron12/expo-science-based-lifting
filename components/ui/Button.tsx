@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { useCallback, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text } from "react-native";
 
-import { theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, theme } from "@/theme";
 
 type ButtonVariant = "primary" | "secondary";
 
@@ -17,27 +18,49 @@ export function Button({
   variant = "primary",
   disabled = false,
 }: ButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animateScale = useCallback(
+    (toValue: number) => {
+      Animated.timing(scale, {
+        toValue,
+        duration: hudMotion.fast,
+        useNativeDriver: true,
+      }).start();
+    },
+    [scale],
+  );
+
   return (
-    <Pressable
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        variant === "primary" ? styles.primary : styles.secondary,
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
-      ]}
+    <Animated.View
+      style={{
+        transform: [{ scale }],
+      }}
     >
-      <Text
+      <Pressable
+        disabled={disabled}
+        onHoverIn={() => !disabled && animateScale(hudMotion.pressScale)}
+        onHoverOut={() => animateScale(1)}
+        onPressIn={() => !disabled && animateScale(hudMotion.pressScale)}
+        onPressOut={() => animateScale(1)}
+        onPress={onPress}
         style={[
-          styles.textBase,
-          variant === "primary" ? styles.textPrimary : styles.textSecondary,
-          disabled && styles.textDisabled,
+          styles.base,
+          variant === "primary" ? styles.primary : styles.secondary,
+          disabled && styles.disabled,
         ]}
       >
-        {label}
-      </Text>
-    </Pressable>
+        <Text
+          style={[
+            styles.textBase,
+            variant === "primary" ? styles.textPrimary : styles.textSecondary,
+            disabled && styles.textDisabled,
+          ]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -49,32 +72,35 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    overflow: "hidden",
   },
   primary: {
-    backgroundColor: theme.colors.accent,
+    backgroundColor: hudColors.accent,
+    borderColor: hudColors.accentSoft,
+    ...hudShadow.glow,
   },
   secondary: {
-    backgroundColor: theme.colors.background.card,
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: hudColors.borderGreenStrong,
   },
   disabled: {
-    backgroundColor: theme.colors.disabled.bg,
-    borderColor: "transparent",
-  },
-  pressed: {
-    opacity: 0.85,
+    backgroundColor: hudColors.surfaceGreen,
+    borderColor: hudColors.border,
+    shadowOpacity: 0,
   },
   textBase: {
     ...theme.typography.label,
+    ...theme.hud.typography.labelWide,
   },
   textPrimary: {
-    color: theme.colors.text.primary,
+    color: hudColors.textInverse,
   },
   textSecondary: {
-    color: theme.colors.text.secondary,
+    color: hudColors.accent,
   },
   textDisabled: {
-    color: theme.colors.disabled.text,
+    color: hudColors.textMuted,
   },
 });

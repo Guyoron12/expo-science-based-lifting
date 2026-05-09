@@ -1,4 +1,4 @@
-import { hudColors, hudTypography, theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, hudTypography, theme } from "@/theme";
 import { useEffect, useRef } from "react";
 import { Animated, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -14,45 +14,109 @@ export default function WorkoutListFooter({
   onEditPlannedWorkoutPress, //TODO: handle edit planned workout press
 }: WorkoutListFooterProps) {
   const shimmerX = useRef(new Animated.Value(-180)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const pulseOpacity = useRef(new Animated.Value(0.22)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
+    if (isRestDay) {
+      pulseScale.setValue(1);
+      pulseOpacity.setValue(0);
+      return;
+    }
+
+    const shimmerLoop = Animated.loop(
       Animated.timing(shimmerX, {
         toValue: 340,
-        duration: 1600,
+        duration: hudMotion.slow,
         useNativeDriver: true,
       }),
     );
-    loop.start();
-    return () => loop.stop();
-  }, [shimmerX]);
+    const pulseLoop = Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulseScale, {
+            toValue: 1.025,
+            duration: hudMotion.slow,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1,
+            duration: hudMotion.slow,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(pulseOpacity, {
+            toValue: 0.34,
+            duration: hudMotion.slow,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseOpacity, {
+            toValue: 0.16,
+            duration: hudMotion.slow,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
+
+    shimmerLoop.start();
+    pulseLoop.start();
+
+    return () => {
+      shimmerLoop.stop();
+      pulseLoop.stop();
+    };
+  }, [isRestDay, pulseOpacity, pulseScale, shimmerX]);
 
   return (
     <View style={styles.listFooter}>
-      <Pressable
+      <Animated.View
         style={[
-          styles.listFooterButton,
-          isRestDay && styles.listFooterButtonDisabled,
+          styles.footerButtonShell,
+          !isRestDay && { transform: [{ scale: pulseScale }] },
         ]}
-        onPress={onStartWorkoutPress}
       >
         {!isRestDay && (
           <Animated.View
             pointerEvents="none"
             style={[
-              styles.shimmer,
+              styles.pulseHalo,
               {
-                transform: [{ translateX: shimmerX }, { rotate: "18deg" }],
+                opacity: pulseOpacity,
               },
             ]}
           />
         )}
-        <Image
-          source={require("@/assets/images/start-workout-icon.png")}
-          style={styles.listFooterButtonImage}
-        />
-        <Text style={styles.listFooterButtonText}>Start Workout</Text>
-      </Pressable>
+        <Pressable
+          disabled={isRestDay}
+          style={({ pressed }) => [
+            styles.listFooterButton,
+            isRestDay && styles.listFooterButtonDisabled,
+            pressed && !isRestDay && styles.listFooterButtonPressed,
+          ]}
+          onPress={onStartWorkoutPress}
+        >
+          {!isRestDay && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.shimmer,
+                {
+                  transform: [{ translateX: shimmerX }, { rotate: "18deg" }],
+                },
+              ]}
+            />
+          )}
+          <Image
+            source={require("@/assets/images/start-workout-icon.png")}
+            style={styles.listFooterButtonImage}
+          />
+          <Text style={styles.listFooterButtonText}>
+            {isRestDay ? "Recovery Locked" : "Start Workout"}
+          </Text>
+        </Pressable>
+      </Animated.View>
       <Pressable onPress={onEditPlannedWorkoutPress}>
         <Text style={styles.listFooterEditButtonText}>
           Edit planned workout
@@ -72,7 +136,19 @@ const styles = StyleSheet.create({
     borderTopColor: hudColors.border,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: hudColors.backgroundPrimary,
+    backgroundColor: hudColors.backgroundSecondary,
+  },
+  footerButtonShell: {
+    width: "100%",
+  },
+  pulseHalo: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    bottom: -8,
+    left: -8,
+    borderRadius: theme.radius.lg,
+    backgroundColor: hudColors.accentGlow,
   },
   listFooterButton: {
     width: "100%",
@@ -85,37 +161,42 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: hudColors.accentHot,
+    borderColor: hudColors.accentSoft,
+    ...hudShadow.glow,
+  },
+  listFooterButtonPressed: {
+    transform: [{ scale: hudMotion.pressScale }],
   },
   shimmer: {
     position: "absolute",
     width: 120,
     height: 120,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: hudColors.shine,
     left: -120,
     top: -45,
   },
   listFooterButtonImage: {
     width: 20,
     height: 20,
-    tintColor: "#042011",
+    tintColor: hudColors.textInverse,
   },
   listFooterButtonText: {
     fontFamily: theme.fonts.bold,
     fontSize: 16,
     fontWeight: "700" as const,
-    color: "#042011",
+    color: hudColors.textInverse,
     ...hudTypography.labelWide,
   },
   listFooterEditButtonText: {
     fontFamily: theme.fonts.bold,
     fontSize: 12,
     fontWeight: "700" as const,
-    color: hudColors.textMuted,
+    color: hudColors.textSecondary,
     ...hudTypography.labelWide,
   },
   listFooterButtonDisabled: {
-    backgroundColor: hudColors.surfaceStrong,
+    backgroundColor: hudColors.surfaceGreen,
     borderColor: hudColors.border,
+    shadowOpacity: 0,
   },
 });

@@ -1,4 +1,4 @@
-import { hudColors, hudTypography, theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, hudTypography, theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,22 +14,32 @@ export default function WorkoutHeader({ title, subtitle }: WorkoutHeaderProps) {
 
   return (
     <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + theme.spacing.lg },
-      ]}
+      style={[styles.container, { paddingTop: insets.top + theme.spacing.lg }]}
     >
-      <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={({ pressed }) => [
+          styles.iconButton,
+          pressed && styles.iconButtonPressed,
+        ]}
+      >
         <Image
           source={require("@/assets/images/white-back-arrow.png")}
           style={styles.backButtonImage}
         />
       </Pressable>
       <View style={styles.titleContainer}>
+        <Text style={styles.kicker}>Protocol</Text>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
-      <Pressable onPress={() => console.log("menu")} style={styles.menuButton}>
+      <Pressable
+        onPress={() => console.log("menu")}
+        style={({ pressed }) => [
+          styles.iconButton,
+          pressed && styles.iconButtonPressed,
+        ]}
+      >
         <Image
           source={require("@/assets/images/menu-icon.png")}
           style={styles.menuButtonImage}
@@ -45,11 +55,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
-    backgroundColor: hudColors.backgroundPrimary,
+    backgroundColor: hudColors.backgroundSecondary,
     borderBottomWidth: 1,
-    borderBottomColor: hudColors.border,
+    borderBottomColor: hudColors.borderGreen,
+    ...hudShadow.card,
   },
-  backButton: {
+  iconButton: {
     width: 40,
     height: 40,
     alignItems: "center",
@@ -57,7 +68,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: hudColors.border,
     borderRadius: 999,
-    backgroundColor: hudColors.surface,
+    backgroundColor: hudColors.surfaceGlass,
+  },
+  iconButtonPressed: {
+    transform: [{ scale: hudMotion.pressScale }],
+    borderColor: hudColors.accent,
+    shadowColor: hudColors.accent,
+    shadowOpacity: 0.26,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
   },
   backButtonImage: {
     width: 24,
@@ -67,6 +86,14 @@ const styles = StyleSheet.create({
   titleContainer: {
     justifyContent: "center",
     alignItems: "center",
+    gap: 2,
+  },
+  kicker: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 10,
+    fontWeight: "700",
+    color: hudColors.accent,
+    ...hudTypography.labelWide,
   },
   title: {
     ...theme.typography.title,
@@ -75,18 +102,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...theme.typography.body,
-    color: hudColors.textMuted,
+    color: hudColors.textSecondary,
     ...hudTypography.mono,
-  },
-  menuButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: hudColors.border,
-    borderRadius: 999,
-    backgroundColor: hudColors.surface,
   },
   menuButtonImage: {
     width: 24,

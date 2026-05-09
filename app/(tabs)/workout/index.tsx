@@ -3,10 +3,17 @@ import WorkoutHeader from "@/containers/headers/workout-header";
 import WorkoutListFooter from "@/containers/workout/list-footer";
 import WorkoutListHeader from "@/containers/workout/list-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
-import { hudColors, theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   Easing,
@@ -95,6 +102,10 @@ function getRoutineByDate(
   });
 }
 
+function isPersonalRecordText(text: string): boolean {
+  return /pr|personal record|pb/i.test(text);
+}
+
 type AnimatedCounterProps = {
   value: number;
   suffix?: string;
@@ -105,7 +116,7 @@ type AnimatedCounterProps = {
 function AnimatedCounter({
   value,
   suffix = "",
-  duration = 600,
+  duration = hudMotion.normal,
   style,
 }: AnimatedCounterProps) {
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -149,22 +160,22 @@ function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
   const entryTranslate = useRef(new Animated.Value(16)).current;
   const prScale = useRef(new Animated.Value(1)).current;
 
-  const isPR = /pr|personal record|pb/i.test(item.lastSession);
+  const isPR = isPersonalRecordText(item.lastSession);
 
   useEffect(() => {
-    const staggerDelay = index * 60;
+    const staggerDelay = index * hudMotion.revealStagger;
 
     const animations = [
       Animated.timing(entryOpacity, {
         toValue: 1,
-        duration: 420,
+        duration: hudMotion.normal,
         delay: staggerDelay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(entryTranslate, {
         toValue: 0,
-        duration: 440,
+        duration: hudMotion.normal,
         delay: staggerDelay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
@@ -176,7 +187,7 @@ function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
         Animated.sequence([
           Animated.delay(staggerDelay + 140),
           Animated.spring(prScale, {
-            toValue: 1.03,
+            toValue: hudMotion.pressScale,
             friction: 7,
             tension: 100,
             useNativeDriver: true,
@@ -205,7 +216,13 @@ function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
         },
       ]}
     >
-      <View style={styles.exerciseRow}>
+      <Pressable
+        onPress={() => onEdit(item)}
+        style={({ pressed }) => [
+          styles.exerciseRow,
+          pressed && styles.exerciseRowPressed,
+        ]}
+      >
         <View style={styles.exerciseImageContainer}>
           <Image source={{ uri: item.image }} style={styles.exerciseImage} />
           <View style={styles.exerciseIndexContainer}>
@@ -215,12 +232,12 @@ function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
         <View style={styles.exerciseInfoContainer}>
           <View style={styles.exerciseNameRow}>
             <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-            <Pressable style={styles.editButton} onPress={() => onEdit(item)}>
+            <View style={styles.editButton}>
               <Image
                 source={require("@/assets/images/edit-icon.png")}
                 style={styles.editButtonImage}
               />
-            </Pressable>
+            </View>
           </View>
           <View style={styles.exercisePlannedStats}>
             <View style={styles.plannedStatsItem}>
@@ -255,7 +272,7 @@ function ExerciseRow({ item, index, onEdit, onPRPulse }: ExerciseRowProps) {
             </Text>
           </View>
         </View>
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -295,26 +312,26 @@ export default function WorkoutScreen() {
     Animated.parallel([
       Animated.timing(pageOpacity, {
         toValue: 1,
-        duration: 260,
+        duration: hudMotion.normal,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(pageTranslateX, {
         toValue: 0,
-        duration: 280,
+        duration: hudMotion.normal,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.sequence([
         Animated.timing(introFlashOpacity, {
           toValue: 0.28,
-          duration: 120,
+          duration: hudMotion.fast,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(introFlashOpacity, {
           toValue: 0,
-          duration: 180,
+          duration: hudMotion.normal,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
@@ -322,24 +339,24 @@ export default function WorkoutScreen() {
     ]).start();
   }, [introFlashOpacity, pageOpacity, pageTranslateX]);
 
-  const triggerPRFlash = () => {
+  const triggerPRFlash = useCallback(() => {
     if (hasTriggeredPrFlash.current) return;
     hasTriggeredPrFlash.current = true;
     Animated.sequence([
       Animated.timing(prFlashOpacity, {
         toValue: 0.55,
-        duration: 90,
+        duration: hudMotion.fast,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(prFlashOpacity, {
         toValue: 0,
-        duration: 220,
+        duration: hudMotion.normal,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [prFlashOpacity]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -373,20 +390,37 @@ export default function WorkoutScreen() {
   const isSkippedDay = routine?.status === "skipped";
   const isRestDay = !routine || isSkippedDay;
   const exercises = isRestDay ? [] : routine.exercises;
+  const exerciseCount = exercises.length;
+  const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets, 0);
+  const prCount = exercises.filter((exercise) =>
+    isPersonalRecordText(exercise.lastSession),
+  ).length;
+  const minRir = exercises.length
+    ? Math.min(...exercises.map((exercise) => exercise.rir.min))
+    : 0;
+  const maxRir = exercises.length
+    ? Math.max(...exercises.map((exercise) => exercise.rir.max))
+    : 0;
+  const intensityTarget = isRestDay ? "recovery" : `${minRir}-${maxRir} RIR`;
+  const strengthScore = Math.min(
+    99,
+    Math.round(68 + totalSets * 1.8 + prCount * 6),
+  );
   const weeklyRoutineNames = weekDatesFromMonday(selectedDate).map((day) => {
     const dayRoutine = getRoutineByDate(activeSplit.routines, day);
     if (!dayRoutine || dayRoutine.status === "skipped") return "Rest";
     return dayRoutine.name;
   });
-  const routineStatusLabel =
-    routine?.status === "completed"
+  const routineStatusLabel = !routine
+    ? "Recovery"
+    : routine.status === "completed"
       ? "Completed"
-      : routine?.status === "skipped"
+      : routine.status === "skipped"
         ? "Skipped"
         : "Planned";
 
   const routineDetailsText =
-    routine && routine.exercises.length > 0
+    !isRestDay && routine && routine.exercises.length > 0
       ? `${routineStatusLabel} · ${routine.exercises.length} exercises · 60 minutes` //TODO: get previous duration from backend
       : `${routineStatusLabel} · No exercises · 0 minutes`;
 
@@ -408,7 +442,12 @@ export default function WorkoutScreen() {
             key={dot.key}
             style={[
               styles.grainDot,
-              { top: dot.top, left: dot.left, width: dot.size, height: dot.size },
+              {
+                top: dot.top,
+                left: dot.left,
+                width: dot.size,
+                height: dot.size,
+              },
             ]}
           />
         ))}
@@ -440,6 +479,11 @@ export default function WorkoutScreen() {
               isSkippedDay={isSkippedDay}
               routineName={routine?.name}
               routineDetailsText={routineDetailsText}
+              exerciseCount={exerciseCount}
+              totalSets={totalSets}
+              prCount={prCount}
+              strengthScore={strengthScore}
+              intensityTarget={intensityTarget}
             />
           }
           contentContainerStyle={styles.listContent}
@@ -476,7 +520,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(0, 255, 135, 0.06)",
+    backgroundColor: hudColors.scanline,
   },
   grainLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -485,17 +529,17 @@ const styles = StyleSheet.create({
   grainDot: {
     position: "absolute",
     borderRadius: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: hudColors.grain,
   },
   list: {
     flex: 1,
   },
   listContent: {
-    gap: 16,
-    paddingBottom: 20,
+    gap: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   exerciseRowContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.lg,
   },
   exerciseRow: {
     width: "100%",
@@ -505,12 +549,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: hudColors.border,
     borderRadius: theme.radius.md,
-    backgroundColor: hudColors.surface,
-    shadowColor: hudColors.accent,
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
+    backgroundColor: hudColors.surfaceRaised,
+    ...hudShadow.card,
+  },
+  exerciseRowPressed: {
+    borderColor: hudColors.borderGreenStrong,
+    transform: [{ scale: hudMotion.pressScale }],
+    ...hudShadow.glow,
   },
   exerciseImageContainer: {
     position: "relative",
@@ -534,13 +579,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: hudColors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: hudColors.borderStrong,
+    borderColor: hudColors.borderGreenStrong,
   },
   exerciseIndexText: {
     fontSize: 12,
     fontFamily: theme.fonts.bold,
     fontWeight: "700",
-    color: hudColors.textHighlight,
+    color: hudColors.accent,
   },
   exerciseInfoContainer: {
     flex: 1,
@@ -566,7 +611,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: hudColors.border,
     borderRadius: 999,
-    backgroundColor: "rgba(0, 255, 135, 0.03)",
+    backgroundColor: hudColors.surfaceGreen,
   },
   editButtonImage: {
     width: 13.33,
@@ -587,7 +632,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: hudColors.border,
     borderRadius: theme.radius.sm,
-    backgroundColor: "rgba(13, 43, 26, 0.35)",
+    backgroundColor: hudColors.surfaceGreen,
   },
   itemLabel: {
     fontFamily: theme.fonts.bold,
@@ -601,7 +646,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.bold,
     fontSize: 14,
     fontWeight: "700" as const,
-    color: hudColors.textHighlight,
+    color: hudColors.accent,
   },
   lastSessionItem: {
     flexDirection: "row",
@@ -615,14 +660,14 @@ const styles = StyleSheet.create({
     borderColor: hudColors.border,
     borderRadius: theme.radius.sm,
     overflow: "hidden",
-    backgroundColor: "rgba(13, 43, 26, 0.35)",
+    backgroundColor: hudColors.surfaceGreen,
   },
   lastSessionValue: {
     flex: 1,
     minWidth: 0,
   },
   lastSessionValueHighlight: {
-    color: hudColors.accentHot,
+    color: hudColors.accent,
   },
   flashFrame: {
     ...StyleSheet.absoluteFillObject,
@@ -632,6 +677,6 @@ const styles = StyleSheet.create({
   },
   prFlash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(57, 255, 20, 0.16)",
+    backgroundColor: hudColors.flash,
   },
 });

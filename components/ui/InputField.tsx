@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { theme } from "@/theme";
+import { hudColors, theme } from "@/theme";
 
 type InputFieldProps = {
   label: string;
@@ -17,15 +18,21 @@ export function InputField({
   onChangeText,
   keyboardType = "default",
 }: InputFieldProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, isFocused && styles.inputFocused]}
         placeholder={placeholder}
-        placeholderTextColor={theme.colors.text.muted}
+        placeholderTextColor={hudColors.textMuted}
+        selectionColor={hudColors.accent}
+        cursorColor={hudColors.accent}
         value={value}
         onChangeText={onChangeText}
+        onBlur={() => setIsFocused(false)}
+        onFocus={() => setIsFocused(true)}
         keyboardType={keyboardType}
       />
     </View>
@@ -38,17 +45,26 @@ const styles = StyleSheet.create({
   },
   label: {
     ...theme.typography.label,
-    color: theme.colors.text.secondary,
+    color: hudColors.textSecondary,
+    ...theme.hud.typography.labelWide,
   },
   input: {
     minHeight: 44,
-    backgroundColor: theme.colors.background.secondary,
-    color: theme.colors.text.primary,
+    backgroundColor: hudColors.backgroundTertiary,
+    color: hudColors.textPrimary,
     borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: hudColors.border,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     fontSize: theme.typography.body.fontSize,
+  },
+  inputFocused: {
+    borderColor: hudColors.accent,
+    backgroundColor: hudColors.surfaceGreen,
+    shadowColor: hudColors.accent,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
   },
 });

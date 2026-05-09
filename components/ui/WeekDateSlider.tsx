@@ -10,21 +10,13 @@ import {
   View,
 } from "react-native";
 
-import { hudColors, hudTypography, theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, hudTypography, theme } from "@/theme";
 
 const CARD_GAP = 12;
 const SCROLL_EDGE_PADDING = 16;
 const CLIPPED_CARD_OPACITY = 0.65;
 const VISIBILITY_EPS = 2;
 const SCROLL_THROTTLE_MS = 32;
-
-const COLORS = {
-  cardBg: "rgba(0, 255, 135, 0.03)",
-  cardBgSelected: "#00FF87",
-  border: "rgba(0, 255, 135, 0.25)",
-  text: "#FFFFFF",
-  textSelected: "#00170D",
-} as const;
 
 // ─── pure helpers ────────────────────────────────────────────────────────────
 
@@ -113,7 +105,7 @@ export default function WeekDateSlider({
   const allWidthsReadyRef = useRef(false);
 
   // Single render-trigger for opacity recalculation after scroll/layout changes
-  const [renderKey, setRenderKey] = useState(0);
+  const [, setRenderKey] = useState(0);
   const bump = useCallback(() => setRenderKey((n) => n + 1), []);
 
   const selectedIndex = days.findIndex((d) => sameCalendarDay(d, selectedDate));
@@ -198,7 +190,7 @@ export default function WeekDateSlider({
         scrollToCenterIndex(index);
       }
     },
-    [onSelectDate, scrollToCenterIndex],
+    [onRoutineSelect, onSelectDate, scrollToCenterIndex],
   );
 
   // ── render ─────────────────────────────────────────────────────────────────
@@ -240,6 +232,7 @@ export default function WeekDateSlider({
             style={({ pressed }) => [
               styles.card,
               isSelected ? styles.cardSelected : styles.cardDefault,
+              pressed && styles.cardPressed,
               index < 6 && styles.cardSpacing,
               {
                 opacity:
@@ -287,7 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    borderRadius: 999,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     justifyContent: "center",
     minWidth: 118,
@@ -296,12 +289,16 @@ const styles = StyleSheet.create({
     marginRight: CARD_GAP,
   },
   cardDefault: {
-    backgroundColor: COLORS.cardBg,
-    borderColor: COLORS.border,
+    backgroundColor: hudColors.surfaceGlass,
+    borderColor: hudColors.border,
   },
   cardSelected: {
-    backgroundColor: COLORS.cardBgSelected,
-    borderColor: hudColors.accentHot,
+    backgroundColor: hudColors.accent,
+    borderColor: hudColors.accentSoft,
+    ...hudShadow.glow,
+  },
+  cardPressed: {
+    transform: [{ scale: hudMotion.pressScale }],
   },
   daySlot: {
     fontFamily: theme.fonts.bold,
@@ -318,9 +315,9 @@ const styles = StyleSheet.create({
     ...hudTypography.headingTight,
   },
   textDefault: {
-    color: COLORS.text,
+    color: hudColors.textPrimary,
   },
   textSelected: {
-    color: COLORS.textSelected,
+    color: hudColors.textInverse,
   },
 });
