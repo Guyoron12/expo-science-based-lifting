@@ -1,4 +1,4 @@
-import type { Exercise } from "@/app/(tabs)/workout/workout.types";
+import type { Exercise } from "@/app/(tabs)/workout/_workout.types";
 import { isPersonalRecordText } from "@/services/functions/functions.service";
 import { hudColors, hudMotion, hudShadow, theme } from "@/theme";
 import { useEffect, useRef } from "react";
@@ -38,6 +38,8 @@ type ExerciseRowProps = {
     field: "sets" | "repRangeMin" | "repRangeMax" | "rirMin" | "rirMax",
     value: string,
   ) => void;
+  onMoveLongPress?: () => void;
+  isDragging?: boolean;
   onImagePress?: () => void;
   onRemove?: () => void;
 };
@@ -51,6 +53,8 @@ export default function ExerciseRow({
   editValues,
   validationErrors,
   onEditFieldChange,
+  onMoveLongPress,
+  isDragging = false,
   onImagePress,
   onRemove,
 }: ExerciseRowProps) {
@@ -162,11 +166,12 @@ export default function ExerciseRow({
     <Animated.View
       style={[
         styles.exerciseRowContainer,
+        isDragging && styles.exerciseRowContainerDragging,
         {
           opacity: entryOpacity,
           transform: [
             { translateY: entryTranslate },
-            { scale: prScale },
+            { scale: isDragging ? 1.02 : prScale },
             { rotate: isEditing ? wobbleRotation : "0deg" },
           ],
         },
@@ -190,7 +195,16 @@ export default function ExerciseRow({
             <View style={styles.exerciseNameRow}>
               <Text style={styles.exerciseName}>{item.exerciseName}</Text>
               <View style={styles.editActions}>
-                <Text style={styles.moveHintText}>MOVE</Text>
+                <Pressable
+                  onLongPress={onMoveLongPress}
+                  delayLongPress={220}
+                  style={({ pressed }) => [
+                    styles.moveHandle,
+                    pressed && styles.moveHandlePressed,
+                  ]}
+                >
+                  <Text style={styles.moveHintText}>MOVE</Text>
+                </Pressable>
                 <Pressable onPress={onRemove} style={styles.removeButton}>
                   <Text style={styles.removeButtonText}>X</Text>
                 </Pressable>
@@ -429,6 +443,9 @@ const styles = StyleSheet.create({
   exerciseRowContainer: {
     paddingHorizontal: theme.spacing.lg,
   },
+  exerciseRowContainerDragging: {
+    zIndex: 10,
+  },
   exerciseRow: {
     width: "100%",
     flexDirection: "row",
@@ -518,6 +535,16 @@ const styles = StyleSheet.create({
     color: hudColors.textSecondary,
     letterSpacing: 1.4,
     textTransform: "uppercase",
+  },
+  moveHandle: {
+    borderWidth: 1,
+    borderColor: hudColors.borderGreenStrong,
+    borderRadius: theme.radius.xs,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+  },
+  moveHandlePressed: {
+    opacity: 0.75,
   },
   removeButton: {
     width: 24,

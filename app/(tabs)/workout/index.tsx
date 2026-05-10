@@ -4,8 +4,6 @@ import ExerciseRow from "@/containers/workout/exercise-row";
 import WorkoutListFooter from "@/containers/workout/list-footer";
 import WorkoutListHeader from "@/containers/workout/list-header";
 import fetchActiveSplit from "@/mockApi/workout.screen";
-import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker";
 import {
   getRoutineByDate,
   isPersonalRecordText,
@@ -15,6 +13,9 @@ import {
 import { hudColors, hudMotion, theme } from "@/theme";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import {
   useCallback,
   useEffect,
@@ -33,7 +34,7 @@ import {
   Text,
   View,
 } from "react-native";
-import type { ActiveSplit, Exercise } from "./workout.types";
+import type { ActiveSplit, Exercise } from "./_workout.types";
 
 type EditableField =
   | "sets"
@@ -487,7 +488,10 @@ export default function WorkoutScreen() {
         },
       }));
       if (imageError) return false;
-      upsertExercise(exerciseId, (exercise) => ({ ...exercise, image: payload.uri }));
+      upsertExercise(exerciseId, (exercise) => ({
+        ...exercise,
+        image: payload.uri,
+      }));
       return true;
     },
     [upsertExercise, validateImageFile],
@@ -495,7 +499,8 @@ export default function WorkoutScreen() {
 
   const pickImageFromLibrary = useCallback(
     async (exerciseId: number) => {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
           "Permission required",
@@ -613,7 +618,9 @@ export default function WorkoutScreen() {
   };
 
   const handleRemoveExercisePress = (exerciseId: number) => {
-    setEditableExercises((prev) => prev.filter((exercise) => exercise.id !== exerciseId));
+    setEditableExercises((prev) =>
+      prev.filter((exercise) => exercise.id !== exerciseId),
+    );
     setExerciseDrafts((prev) => {
       const next = { ...prev };
       delete next[exerciseId];
@@ -625,6 +632,13 @@ export default function WorkoutScreen() {
       return next;
     });
   };
+
+  const handleExerciseReorder = useCallback(
+    (nextExercises: Exercise[]) => {
+      setEditableExercises(nextExercises.map(cloneExercise));
+    },
+    [cloneExercise],
+  );
 
   const handleDiscardPlannedWorkoutEdits = () => {
     setEditableExercises([]);
@@ -639,7 +653,8 @@ export default function WorkoutScreen() {
     const nextValidationErrors: Record<number, ExerciseValidationErrors> = {};
 
     for (const exercise of editableExercises) {
-      const draftValues = exerciseDrafts[exercise.id] ?? toDraftValues(exercise);
+      const draftValues =
+        exerciseDrafts[exercise.id] ?? toDraftValues(exercise);
       const fieldErrors = validateDraftValues(draftValues);
       const exerciseErrors = exerciseValidationErrors[exercise.id] ?? {};
       const mergedErrors: ExerciseValidationErrors = {
@@ -667,7 +682,8 @@ export default function WorkoutScreen() {
 
   const buildExercisesFromDrafts = useCallback(() => {
     return editableExercises.map((exercise) => {
-      const draftValues = exerciseDrafts[exercise.id] ?? toDraftValues(exercise);
+      const draftValues =
+        exerciseDrafts[exercise.id] ?? toDraftValues(exercise);
       return {
         ...exercise,
         sets: Number(draftValues.sets.trim()),
@@ -687,40 +703,47 @@ export default function WorkoutScreen() {
     if (!routine) return;
     const { hasErrors } = collectValidationErrors();
     if (hasErrors) {
-      Alert.alert("Validation errors", "Please fix invalid fields before saving.");
+      Alert.alert(
+        "Validation errors",
+        "Please fix invalid fields before saving.",
+      );
       return;
     }
 
     const nextExercises = buildExercisesFromDrafts();
 
-    Alert.alert("Save Planned Workout", "Where do you want to save these changes?", [
-      {
-        text: "Current Session",
-        onPress: () => {
-          setRoutineExerciseOverrides((prev) => ({
-            ...prev,
-            [routine.id]: nextExercises.map(cloneExercise),
-          }));
-          setEditableExercises(nextExercises.map(cloneExercise));
-          setIsEditingPlannedWorkout(false);
-          showToast("Workout saved for this session");
+    Alert.alert(
+      "Save Planned Workout",
+      "Where do you want to save these changes?",
+      [
+        {
+          text: "Current Session",
+          onPress: () => {
+            setRoutineExerciseOverrides((prev) => ({
+              ...prev,
+              [routine.id]: nextExercises.map(cloneExercise),
+            }));
+            setEditableExercises(nextExercises.map(cloneExercise));
+            setIsEditingPlannedWorkout(false);
+            showToast("Workout saved for this session");
+          },
         },
-      },
-      {
-        text: "Save Permanently",
-        onPress: () => {
-          setRoutineExerciseOverrides((prev) => ({
-            ...prev,
-            [routine.id]: nextExercises.map(cloneExercise),
-          }));
-          setEditableExercises(nextExercises.map(cloneExercise));
-          setIsEditingPlannedWorkout(false);
-          showToast("Workout saved permanently");
-          // TODO: Persist permanent planned workout updates once backend mutation is available.
+        {
+          text: "Save Permanently",
+          onPress: () => {
+            setRoutineExerciseOverrides((prev) => ({
+              ...prev,
+              [routine.id]: nextExercises.map(cloneExercise),
+            }));
+            setEditableExercises(nextExercises.map(cloneExercise));
+            setIsEditingPlannedWorkout(false);
+            showToast("Workout saved permanently");
+            // TODO: Persist permanent planned workout updates once backend mutation is available.
+          },
         },
-      },
-      { text: "Cancel", style: "cancel" },
-    ]);
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
   };
 
   const handleAddExercisePress = () => {
@@ -774,54 +797,100 @@ export default function WorkoutScreen() {
           { opacity: pageOpacity, transform: [{ translateX: pageTranslateX }] },
         ]}
       >
-        <FlatList
-          style={styles.list}
-          data={displayedExercises}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item, index }) => (
-            <ExerciseRow
-              item={item}
-              index={index}
-              onEdit={handleEditExercisePress}
-              onPRPulse={triggerPRFlash}
-              isEditing={isEditingPlannedWorkout}
-              editValues={exerciseDrafts[item.id]}
-              validationErrors={exerciseValidationErrors[item.id]}
-              onEditFieldChange={(field, value) =>
-                updateDraftField(item.id, field, value)
-              }
-              onImagePress={() => handleImagePress(item.id)}
-              onRemove={() => handleRemoveExercisePress(item.id)}
-            />
-          )}
-          ListHeaderComponent={
-            <WorkoutListHeader
-              selectedDate={selectedDate}
-              routineNames={weeklyRoutineNames}
-              onSelectDate={setSelectedDate}
-              isRestDay={isRestDay}
-              isSkippedDay={isSkippedDay}
-              routineName={routine?.name}
-              routineDetailsText={routineDetailsText}
-              exerciseCount={exerciseCount}
-              totalSets={totalSets}
-              prCount={prCount}
-              strengthScore={strengthScore}
-              intensityTarget={intensityTarget}
-            />
-          }
-          ListFooterComponent={
-            isEditingPlannedWorkout ? (
+        {isEditingPlannedWorkout ? (
+          <DraggableFlatList
+            style={styles.list}
+            data={displayedExercises}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item, getIndex, drag, isActive }) => (
+              <ExerciseRow
+                item={item}
+                index={getIndex() ?? 0}
+                onEdit={handleEditExercisePress}
+                onPRPulse={triggerPRFlash}
+                isEditing
+                isDragging={isActive}
+                onMoveLongPress={drag}
+                editValues={exerciseDrafts[item.id]}
+                validationErrors={exerciseValidationErrors[item.id]}
+                onEditFieldChange={(field, value) =>
+                  updateDraftField(item.id, field, value)
+                }
+                onImagePress={() => handleImagePress(item.id)}
+                onRemove={() => handleRemoveExercisePress(item.id)}
+              />
+            )}
+            onDragEnd={({ data }) => handleExerciseReorder(data)}
+            ListHeaderComponent={
+              <WorkoutListHeader
+                selectedDate={selectedDate}
+                routineNames={weeklyRoutineNames}
+                onSelectDate={setSelectedDate}
+                isRestDay={isRestDay}
+                isSkippedDay={isSkippedDay}
+                routineName={routine?.name}
+                routineDetailsText={routineDetailsText}
+                exerciseCount={exerciseCount}
+                totalSets={totalSets}
+                prCount={prCount}
+                strengthScore={strengthScore}
+                intensityTarget={intensityTarget}
+              />
+            }
+            ListFooterComponent={
               <View style={styles.editListFooter}>
-                <Pressable onPress={handleAddExercisePress} style={styles.addExerciseButton}>
+                <Pressable
+                  onPress={handleAddExercisePress}
+                  style={styles.addExerciseButton}
+                >
                   <Text style={styles.addExerciseButtonText}>Add exercise</Text>
                 </Pressable>
               </View>
-            ) : null
-          }
-          contentContainerStyle={styles.listContent}
-          keyboardShouldPersistTaps="handled"
-        />
+            }
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            containerStyle={styles.list}
+          />
+        ) : (
+          <FlatList
+            style={styles.list}
+            data={displayedExercises}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item, index }) => (
+              <ExerciseRow
+                item={item}
+                index={index}
+                onEdit={handleEditExercisePress}
+                onPRPulse={triggerPRFlash}
+                editValues={exerciseDrafts[item.id]}
+                validationErrors={exerciseValidationErrors[item.id]}
+                onEditFieldChange={(field, value) =>
+                  updateDraftField(item.id, field, value)
+                }
+                onImagePress={() => handleImagePress(item.id)}
+                onRemove={() => handleRemoveExercisePress(item.id)}
+              />
+            )}
+            ListHeaderComponent={
+              <WorkoutListHeader
+                selectedDate={selectedDate}
+                routineNames={weeklyRoutineNames}
+                onSelectDate={setSelectedDate}
+                isRestDay={isRestDay}
+                isSkippedDay={isSkippedDay}
+                routineName={routine?.name}
+                routineDetailsText={routineDetailsText}
+                exerciseCount={exerciseCount}
+                totalSets={totalSets}
+                prCount={prCount}
+                strengthScore={strengthScore}
+                intensityTarget={intensityTarget}
+              />
+            }
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
       </Animated.View>
       {isEditingPlannedWorkout && (
         <View style={styles.editActionsContainer}>
@@ -847,7 +916,10 @@ export default function WorkoutScreen() {
             isEditingPlannedWorkout && styles.toastContainerEditing,
             {
               opacity: toastOpacity,
-              transform: [{ translateY: toastTranslateY }, { scale: toastScale }],
+              transform: [
+                { translateY: toastTranslateY },
+                { scale: toastScale },
+              ],
             },
           ]}
         >
