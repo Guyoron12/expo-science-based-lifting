@@ -1,15 +1,17 @@
-import { hudColors, hudMotion, hudShadow, hudTypography, theme } from "@/theme";
+import { hudColors, hudMotion, hudShadow, theme } from "@/theme";
 import { useEffect, useRef } from "react";
 import { Animated, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 type WorkoutListFooterProps = {
   isRestDay: boolean;
+  isEditingPlannedWorkout?: boolean;
   onStartWorkoutPress?: () => void;
   onEditPlannedWorkoutPress?: () => void;
 };
 
 export default function WorkoutListFooter({
   isRestDay,
+  isEditingPlannedWorkout = false,
   onStartWorkoutPress, //TODO: handle start workout press
   onEditPlannedWorkoutPress, //TODO: handle edit planned workout press
 }: WorkoutListFooterProps) {
@@ -117,9 +119,16 @@ export default function WorkoutListFooter({
           </Text>
         </Pressable>
       </Animated.View>
-      <Pressable onPress={onEditPlannedWorkoutPress}>
+      <Pressable
+        onPress={onEditPlannedWorkoutPress}
+        style={({ pressed }) => [
+          styles.listFooterEditButton,
+          isEditingPlannedWorkout && styles.listFooterEditButtonActive,
+          pressed && styles.listFooterEditButtonPressed,
+        ]}
+      >
         <Text style={styles.listFooterEditButtonText}>
-          Edit planned workout
+          {isEditingPlannedWorkout ? "Editing planned workout" : "Edit planned workout"}
         </Text>
       </Pressable>
     </View>
@@ -185,14 +194,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700" as const,
     color: hudColors.textInverse,
-    ...hudTypography.labelWide,
+    letterSpacing: 1.4,
+    textTransform: "uppercase" as const,
   },
   listFooterEditButtonText: {
     fontFamily: theme.fonts.bold,
     fontSize: 12,
     fontWeight: "700" as const,
     color: hudColors.textSecondary,
-    ...hudTypography.labelWide,
+    letterSpacing: 1.4,
+    textTransform: "uppercase" as const,
+  },
+  listFooterEditButton: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.base,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  listFooterEditButtonPressed: {
+    opacity: 0.9,
+  },
+  listFooterEditButtonActive: {
+    backgroundColor: hudColors.surfaceGreen,
+    borderColor: hudColors.borderGreenStrong,
   },
   listFooterButtonDisabled: {
     backgroundColor: hudColors.surfaceGreen,
