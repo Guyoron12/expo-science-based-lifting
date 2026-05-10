@@ -11,6 +11,11 @@ import {
 } from "react-native";
 
 import { hudColors, hudMotion, hudShadow, hudTypography, theme } from "@/theme";
+import {
+  isSameCalendarDay,
+  startOfLocalDay,
+  weekDatesFromMonday,
+} from "@/services/functions/functions.service";
 
 const CARD_GAP = 12;
 const SCROLL_EDGE_PADDING = 16;
@@ -19,31 +24,6 @@ const VISIBILITY_EPS = 2;
 const SCROLL_THROTTLE_MS = 32;
 
 // ─── pure helpers ────────────────────────────────────────────────────────────
-
-function startOfLocalDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function sameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function weekDaysFromMonday(anchor: Date): Date[] {
-  const base = startOfLocalDay(anchor);
-  const day = base.getDay();
-  base.setDate(base.getDate() + (day === 0 ? -6 : 1 - day)); // rewind to Monday
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(base);
-    d.setDate(base.getDate() + i);
-    return d;
-  });
-}
 
 function cardLeftEdge(index: number, widths: (number | undefined)[]): number {
   let x = SCROLL_EDGE_PADDING;
@@ -94,7 +74,7 @@ export default function WeekDateSlider({
   onSelectDate,
   onRoutineSelect,
 }: WeekDateSliderProps) {
-  const days = useRef(weekDaysFromMonday(new Date())).current;
+  const days = useRef(weekDatesFromMonday(new Date())).current;
 
   const scrollRef = useRef<ScrollView>(null);
   const cardWidths = useRef<(number | undefined)[]>(Array(7).fill(undefined));
@@ -108,7 +88,9 @@ export default function WeekDateSlider({
   const [, setRenderKey] = useState(0);
   const bump = useCallback(() => setRenderKey((n) => n + 1), []);
 
-  const selectedIndex = days.findIndex((d) => sameCalendarDay(d, selectedDate));
+  const selectedIndex = days.findIndex((d) =>
+    isSameCalendarDay(d, selectedDate),
+  );
 
   // ── scrolling ──────────────────────────────────────────────────────────────
 
@@ -215,7 +197,7 @@ export default function WeekDateSlider({
       contentContainerStyle={styles.scrollContent}
     >
       {days.map((day, index) => {
-        const isSelected = sameCalendarDay(day, selectedDate);
+        const isSelected = isSameCalendarDay(day, selectedDate);
         const routineLabel = routineLabelAt(routineNames, index);
         const dayLabel = weekdayLabel(day);
         const fullyVisible =
