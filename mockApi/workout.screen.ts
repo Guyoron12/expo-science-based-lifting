@@ -10,7 +10,7 @@ const split = {
     {
       id: 1,
       name: "upper A",
-      date: "2026-05-05",
+      date: "2026-05-15",
       status: "planned",
       exercises: [
         {

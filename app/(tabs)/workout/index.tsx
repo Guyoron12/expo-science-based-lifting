@@ -15,7 +15,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import DraggableFlatList from "react-native-draggable-flatlist";
 import {
   useCallback,
   useEffect,
@@ -34,6 +33,7 @@ import {
   Text,
   View,
 } from "react-native";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import type { ActiveSplit, Exercise } from "./_workout.types";
 
 type EditableField =
